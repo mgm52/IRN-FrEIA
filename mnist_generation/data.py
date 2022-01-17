@@ -31,10 +31,14 @@ def sample_mnist8():
     return data, label
 
 def see_mnist8(data, label=0):
-    print(f'Digit label: {label}')
+    #print(f'Digit label: {label}')
 
     im = np.array(data, dtype=np.uint8)
     im.resize(8, 8)
+
+    print(f'Max in sample: {np.amax(im)}')
+    print(f'Median in sample: {np.median(im)}')
+    print(f'Min in sample: {np.amin(im)}')
 
     plt.imshow(im)
     plt.show()
