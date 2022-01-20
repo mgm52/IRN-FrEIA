@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 
 class ActNorm(nn.Module):
+    
     def __init__(self, device):
         super(ActNorm, self).__init__()
         self.log_scale = None

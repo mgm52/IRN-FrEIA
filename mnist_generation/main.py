@@ -3,7 +3,6 @@ import data as data_functions
 import torch
 
 from networks.freia_nets import inn_fc
-from networks.freia_nets import inn_conv
 from networks.freia_nets import sample_inn_fc_mnist8
 
 from networks.pytorch_nets import inn_fc_pt
@@ -24,26 +23,18 @@ def train_inn_fc_mnist8(inn, min_loss=0.8, max_iters=10000, pytorch_mode=False):
         data, label = data_functions.sample_mnist8()
 
         if pytorch_mode:
-            # c format
             data = data.reshape(64)
             x = torch.tensor(data, dtype=torch.float32, device=device)
             z, log_jac_det = inn(x)
 
             loss = 0.5*torch.sum(z[0]**2) - log_jac_det
 
-            #print(f'FINALLY ended up with loss of {loss}')
         else:
             x = torch.Tensor(np.array([data]))
             z, log_jac_det = inn(x)
             loss = 0.5*torch.sum(z**2, 1) - log_jac_det
 
-        
         loss = loss.mean() / (8*8)
-
-        if loss<0.0:
-            print("Achieved loss of " + str(loss))
-            #print(z)
-
         losses.append(loss)
 
         if i%250==249:
@@ -70,7 +61,7 @@ def full_inn_fc_mnist8_example():
 # Gives output z shape (1, 64)
 def full_inn_fc_mnist8_pt_example():
     inn = inn_fc_pt(device=device)
-    train_inn_fc_mnist8(inn, -999.15, 20000, True)
+    train_inn_fc_mnist8(inn, 0.5, 20000, True)
     sample_inn_fc_mnist8_pt(inn, 5, device=device)
 
-full_inn_fc_mnist8_pt_example()
+full_inn_fc_mnist8_example()
