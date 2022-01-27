@@ -1,10 +1,9 @@
-# Okay so.....
 from math import floor
 from tokenize import Double
 from FrEIA.modules.reshapes import HaarDownsampling
-from freia_custom_coupling import AffineCouplingOneSidedIRN, EnhancedCouplingOneSidedIRN
-import bicubic_pytorch
-import data as data_functions
+from .freia_custom_coupling import AffineCouplingOneSidedIRN, EnhancedCouplingOneSidedIRN
+from .bicubic_pytorch import imresize
+from data import mnist8_iterator
 import FrEIA.framework as ff
 import numpy as np
 import torch
@@ -59,7 +58,7 @@ def calculate_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_fr
     loss_recon = lambda_recon * torch.abs(x - x_recon_from_y).sum() / batch_size
     # Purpose of Loss_Guide: sensible downscaling
         # Intuition about using L2 here: the most recognisable downscaled images get the most prominant points correct?
-    x_downscaled = bicubic_pytorch.imresize(x, sizes=(4, 4))
+    x_downscaled = imresize(x, sizes=(4, 4))
     loss_guide = lambda_guide * ((x_downscaled - y)**2).sum() / batch_size
     # Purpose of Loss_Distribution_Match_Surrogate:
         # Encouraging the model to always produce things that look like the OG dataset, even when it doesn't know what to do?
@@ -81,7 +80,7 @@ def test_inn_mnist8(inn,
     lambda_distr=1,
     batch_size=178
 ):
-    mnist8_iter = data_functions.mnist8_iterator()
+    mnist8_iter = mnist8_iterator()
 
     with torch.no_grad():
         x, y, z, x_recon_from_y = sample_inn(inn, mnist8_iter, batch_size=batch_size, use_test_set=True)
@@ -103,7 +102,7 @@ def train_inn_mnist8(inn,
     lambda_distr=1
 ):
     optimizer = torch.optim.Adam(inn.parameters(), lr=learning_rate)
-    mnist8_iter = data_functions.mnist8_iterator()
+    mnist8_iter = mnist8_iterator()
 
     i = 0
     losses = []
@@ -136,23 +135,6 @@ def train_inn_mnist8(inn,
         total_loss.backward()
         optimizer.step()
         i+=1
-
-
-inn = IRN(3, 8, 8, ds_count=1, inv_per_ds=2)
-train_inn_mnist8(inn, max_batches=6000, max_epochs=-1, target_loss=-1, learning_rate=0.001, batch_size=500,
-                 lambda_recon=1, lambda_guide=2, lambda_distr=1)
-
-mnist8_iter = data_functions.mnist8_iterator()
-for i in range(10):
-    x, y, z, x_recon_from_y = sample_inn(inn, mnist8_iter, batch_size=1, use_test_set=True)
-
-    imgs = [
-        data_functions.process_4bit_img(y[0][0].detach().cpu().numpy(), (4, 4)),
-        data_functions.process_4bit_img(x_recon_from_y[0][0].detach().cpu().numpy(), (8, 8)),
-        data_functions.process_4bit_img(x[0][0].detach().cpu().numpy(), (8, 8)),
-    ]
-
-    data_functions.see_multiple_imgs(imgs, "IRN-downscaled,  IRN-upscaled,  GT")
 
 
 # Wavelet:              in: c channels                                    out: 4c channels

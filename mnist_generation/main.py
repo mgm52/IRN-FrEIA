@@ -2,11 +2,8 @@
 import data as data_functions
 import torch
 
-from networks.freia_nets import inn_fc
-from networks.freia_nets import sample_inn_fc_mnist8
-
-from networks.pytorch_nets import inn_fc_pt
-from networks.pytorch_nets import sample_inn_fc_mnist8_pt
+from networks.freia_nets import inn_fc, sample_inn_fc_mnist8
+from networks.pytorch_nets import inn_fc_pt, sample_inn_fc_mnist8_pt
 
 import numpy as np
 
