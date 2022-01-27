@@ -91,6 +91,19 @@ def see_multiple_imgs(imgs, title=""):
     plt.title(title, loc="right")
     plt.show()
 
+def save_multiple_imgs(imgs, rows, cols, titles=[], filename="out"):
+    assert rows*cols==len(imgs), f'Cannot print {len(imgs)} images on a {rows}x{cols} grid'
+    f, axes = plt.subplots(rows, cols)
+    for i in range(rows):
+        for j in range(cols):
+            axes[i, j].imshow(imgs[i*cols + j])
+            if i*cols + j < len(titles):
+                axes[i, j].set_title(titles[i*cols + j])
+            axes[i, j].set_xticklabels([])
+            axes[i, j].set_yticklabels([])
+    plt.savefig(filename + '.png')
+    plt.close(f)
+
 def see_example_mnist8():
     data, label = sample_mnist8()
     see_mnist8(data, label)
