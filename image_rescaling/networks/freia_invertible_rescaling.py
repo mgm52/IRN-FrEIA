@@ -2,7 +2,7 @@ from math import floor
 from tokenize import Double
 from FrEIA.modules.reshapes import HaarDownsampling
 from .freia_custom_coupling import AffineCouplingOneSidedIRN, EnhancedCouplingOneSidedIRN
-from .bicubic_pytorch import imresize
+from bicubic_pytorch import imresize
 from data import mnist8_iterator
 import FrEIA.framework as ff
 import numpy as np
