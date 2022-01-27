@@ -1,18 +1,19 @@
 # Okay so.....
+from math import floor
 from tokenize import Double
+from FrEIA.modules.reshapes import HaarDownsampling
+from freia_custom_coupling import AffineCouplingOneSidedIRN, EnhancedCouplingOneSidedIRN
+import bicubic_pytorch
+import data as data_functions
+import FrEIA.framework as ff
 import numpy as np
 import torch
 import torch.nn as nn
-import data as data_functions
-from FrEIA.modules.reshapes import HaarDownsampling
-from FrEIA.modules.graph_topology import Split
-from FrEIA.modules.coupling_layers import AffineCouplingOneSided
-import FrEIA.framework as ff
-from freia_custom_coupling import AffineCouplingOneSidedIRN
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
+torch.set_printoptions(linewidth=200)
+np.set_printoptions(linewidth=200)
 
-# Todo: make my subnet look more like IRN's deep conv subnet
 def subnet(channels_in, channels_out):
     return nn.Sequential(nn.Conv2d(channels_in, 256, 3, 1, 1), nn.ReLU(),
                          nn.Conv2d(256, channels_out, 3, 1, 1))
@@ -26,14 +27,11 @@ def IRN(*dims, ds_count=1, inv_per_ds=1):
     for d in range(ds_count):
         inn.append(HaarDownsampling, order_by_wavelet=True)
         for i in range(0, inv_per_ds):
-            inn.append(AffineCouplingOneSidedIRN, subnet_constructor=subnet)
+            inn.append(EnhancedCouplingOneSidedIRN, subnet_constructor=subnet)
     return inn.cuda()
 
-#data_functions.see_mnist8(x, size=8)
-#data_functions.see_mnist8(x_t_hds_coupled_inn[0][0].detach().numpy(), size=x_t_hds_coupled_inn[0][0].shape[-1])
-
-def sample_inn(inn, batch_size=1):
-    x = data_functions.sample_mnist8_imgs(count=batch_size)
+def sample_inn(inn, mnist8_iter, batch_size=1, use_test_set=False):
+    x = mnist8_iter.iterate_mnist8_imgs(count=batch_size, use_test_data=use_test_set)
     x = torch.tensor(np.array(x), dtype=torch.float, device=device).reshape(-1, 1, 8, 8)
     # x is now of shape (1, 1, 8, 8)
     x = x.repeat(1, 3, 1, 1)
@@ -47,72 +45,119 @@ def sample_inn(inn, batch_size=1):
 
     #x_recon_from_y_and_z, _ = inn([y_and_z], rev=True)
 
-    # Loss = l1 Loss_Reconstruction + l2 Loss_Guide + l3 Loss_Distribution_Match_Surrogate
     z_sample = torch.normal(torch.zeros_like(z), torch.ones_like(z))
     # z_sample is now of shape (1, c-3, w, h)
     y_and_z_sample = torch.cat((y, z_sample), dim=1)
     # y_and_z_sample is now of shape (1, c, w, h)
     x_recon_from_y, _ = inn([y_and_z_sample], rev=True)
 
-    return x, x_recon_from_y
+    return x, y, z, x_recon_from_y
 
-def train_inn_mnist8(inn, max_iters=10000, target_loss=-1, learning_rate=0.001, batch_size=5):
+def calculate_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, batch_size):
+    # Loss = Loss_Reconstruction + Loss_Guide + Loss_Distribution_Match_Surrogate
+    # Purpose of Loss_Reconstruction: accurate upscaling
+    loss_recon = lambda_recon * torch.abs(x - x_recon_from_y).sum() / batch_size
+    # Purpose of Loss_Guide: sensible downscaling
+        # Intuition about using L2 here: the most recognisable downscaled images get the most prominant points correct?
+    x_downscaled = bicubic_pytorch.imresize(x, sizes=(4, 4))
+    loss_guide = lambda_guide * ((x_downscaled - y)**2).sum() / batch_size
+    # Purpose of Loss_Distribution_Match_Surrogate:
+        # Encouraging the model to always produce things that look like the OG dataset, even when it doesn't know what to do?
+        # And encouraging disentanglement (by forcing z to be a normal dist)?
+        # Full Loss_Distribution_Match does this by measuring JSD between x and x_reconstructed.
+        # Surrogate Loss_Distribution_match does this by measuring CE between z and z_sample.
+    # Paper describes this as: -1 * sum [prob(x from dataset) * log2(prob(z in our normal dist))]
+    # Because prob(x from dataset) is a constant (I believe?): we have -1 * log2(prob(z in our normal dist))
+    # Because surprisal in a standard normal dist is O(x^2): we have z^2
+    loss_distr = lambda_distr * (z**2).sum() / batch_size
+    
+    total_loss = loss_recon + loss_guide + loss_distr
+
+    return loss_recon, loss_guide, loss_distr, total_loss
+
+def test_inn_mnist8(inn,
+    lambda_recon=1,
+    lambda_guide=1,
+    lambda_distr=1,
+    batch_size=178
+):
+    mnist8_iter = data_functions.mnist8_iterator()
+
+    with torch.no_grad():
+        x, y, z, x_recon_from_y = sample_inn(inn, mnist8_iter, batch_size=batch_size, use_test_set=True)
+        loss_recon, loss_guide, loss_distr, total_loss = calculate_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, batch_size)
+    
+    print(f'loss_recon={loss_recon}, loss_guide={loss_guide}, loss_distr={loss_distr}')
+    print(f'Average loss in test set: {total_loss}')
+
+    return total_loss
+
+def train_inn_mnist8(inn,
+    max_batches=10000,
+    max_epochs=-1, #TODO: use this
+    target_loss=-1,
+    learning_rate=0.001,
+    batch_size=5,
+    lambda_recon=1,
+    lambda_guide=1,
+    lambda_distr=1
+):
     optimizer = torch.optim.Adam(inn.parameters(), lr=learning_rate)
+    mnist8_iter = data_functions.mnist8_iterator()
 
     i = 0
     losses = []
     avg_loss = target_loss+1
-    while (max_iters==-1 or i < max_iters) and (target_loss==-1 or target_loss<=avg_loss):
+    while (max_batches==-1 or i < max_batches) and (target_loss==-1 or target_loss<=avg_loss):
         optimizer.zero_grad()
         
-        # Todo: iterate through dataset properly (epochs) rather than randomly sampling
-        x, x_recon_from_y = sample_inn(inn, batch_size=batch_size)
+        x, y, z, x_recon_from_y = sample_inn(inn, mnist8_iter, batch_size=batch_size, use_test_set=False)
+        loss_recon, loss_guide, loss_distr, total_loss = calculate_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, batch_size)
+        
+        losses.append(total_loss)
 
-        loss = torch.abs(x - x_recon_from_y).sum() / batch_size
-        losses.append(loss)
-
-        if i%250==249:
+        if i%250==0:
             avg_loss = sum(losses) / len(losses)
-            #print(y_and_z.shape)
             #print(y.shape)
             #print(z.shape)
-            #print(x_recon_from_y_and_z.shape)
-            #print(z_sample.shape)
-            #print(y_and_z_sample.shape)
-            print(x_recon_from_y.shape)
-            print(f'Avg loss across parameters, in last 250 samples: {avg_loss}')
+            #print(x_recon_from_y.shape)
+            #print(x_downscaled.shape)
+            print(f'loss_recon={loss_recon}, loss_guide={loss_guide}, loss_distr={loss_distr}')
+            print(f'Avg loss, in last {250 if i > 0 else 1} batches: {avg_loss}')
+            print(f'In test dataset:')
+            test_inn_mnist8(inn, lambda_recon, lambda_guide, lambda_distr)
+            print("")
             losses = []
         
         if i%5000==4999:
             learning_rate /= 2
             print(f'Halved learning rate from {learning_rate*2} to {learning_rate}')
         
-        loss.backward()
+        total_loss.backward()
         optimizer.step()
         i+=1
 
 
 inn = IRN(3, 8, 8, ds_count=1, inv_per_ds=2)
-train_inn_mnist8(inn, max_iters=6000, target_loss=-1, learning_rate=0.001, batch_size=500)
+train_inn_mnist8(inn, max_batches=6000, max_epochs=-1, target_loss=-1, learning_rate=0.001, batch_size=500,
+                 lambda_recon=1, lambda_guide=2, lambda_distr=1)
 
+mnist8_iter = data_functions.mnist8_iterator()
 for i in range(10):
-        x, x_recon_from_y = sample_inn(inn)
-        data_functions.see_mnist8(x.detach().cpu().numpy())
-        data_functions.see_mnist8(x_recon_from_y.detach().cpu().numpy())
+    x, y, z, x_recon_from_y = sample_inn(inn, mnist8_iter, batch_size=1, use_test_set=True)
 
-# Wavelet transformation class
-    # forward: split x (c channels) into 
-    # forward rev: join LR and LD into HR
-    
+    imgs = [
+        data_functions.process_4bit_img(y[0][0].detach().cpu().numpy(), (4, 4)),
+        data_functions.process_4bit_img(x_recon_from_y[0][0].detach().cpu().numpy(), (8, 8)),
+        data_functions.process_4bit_img(x[0][0].detach().cpu().numpy(), (8, 8)),
+    ]
 
-# Coupling class
-    # expects 2 input (h1, h2)
-    # gives 2 output (h1, h2)
+    data_functions.see_multiple_imgs(imgs, "IRN-downscaled,  IRN-upscaled,  GT")
 
 
 # Wavelet:              in: c channels                                    out: 4c channels
-# (split to 3, 4c-3)
 # InvBlock:             in: 3 channels, 4c-3 channels                     out: 3 channels, 4c-3 channels
 # ...
 # (joined to 4c)
+
 # Downscaling Module:   in: c channels                                    out: 4c channels
