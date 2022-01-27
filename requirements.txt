@@ -1,0 +1,5 @@
+matplotlib==3.5.0
+numpy==1.21.3
+scikit_learn==1.0.2
+torch==1.10.0+cu113
+git+https://github.com/VLL-HD/FrEIA.git
