@@ -56,6 +56,8 @@
 
 ### New functionality
 
+- Optimize for very high resolutions, e.g. on 4k images. The "wavelet flow: fast training of high resolution normalizing flows" paper makes the case that their architecture can work on high res data better. Try to work this into my results and get an improvement on old architecture!
+
 - Could I remove loss_guide to turn this into a compression technique?
 	- Probably yes, but it might not be very useful given that compression has been attempted before by networks not limited by compressing to an image
 
@@ -71,8 +73,6 @@
 - Idea: make the downscaling/upscaling technique durable to other forms of compression? Could add an additional loss term: reconstruction of x from JPEG-compressed y.
 
 - Idea: steganography! Given LR and HR, return HR_steg which resembles HR but hides LR, and return latent vector z. (LR, HR) <-> (z, HR_steg)
-
-- Idea: optimize for very high resolutions, e.g. on 4k images. The "wavelet flow: fast training of high resolution normalizing flows" paper makes the case that their architecture can work on high res data better. Try to work this into my results and get an improvement on old architecture!
 
 ### Writeup details
 
