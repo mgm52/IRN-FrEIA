@@ -65,7 +65,7 @@ def see_mnist8(data, label=-1, clip_values=True, floor_values=True):
     see_img(im)
 
 def process_4bit_img(data, shape, clip_values=True, floor_values=True):
-    im = np.array(data)
+    im = np.array(data.detach().cpu().numpy())
     assert np.prod(shape) == np.size(im), f'see_4bit_img given a shape ({shape}) that doesnt match element count {np.size(im)} - expected {np.prod(shape)} elements instead'
 
     im.resize(*shape)
@@ -83,25 +83,28 @@ def see_img(im):
     plt.imshow(im)
     plt.show()
 
-def see_multiple_imgs(imgs, title=""):
-    f, axes = plt.subplots(1, len(imgs))
-    for i in range(len(imgs)):
-        axes[i].imshow(imgs[i])
-    plt.title(title, loc="right")
-    plt.show()
+def see_multiple_imgs(imgs, rows, cols, row_titles=[], plot_titles=[], see=True, save=False, filename="out"):
+    assert rows*cols >= len(imgs), f'Cannot print {len(imgs)} images on a {rows}x{cols} grid'
+    
+    f, axes = plt.subplots(figsize=(3*cols, 3*rows) , nrows=rows, ncols=1, sharey=True) 
 
-def save_multiple_imgs(imgs, rows, cols, titles=[], filename="out"):
-    assert rows*cols==len(imgs), f'Cannot print {len(imgs)} images on a {rows}x{cols} grid'
-    f, axes = plt.subplots(rows, cols)
-    for i in range(rows):
-        for j in range(cols):
-            axes[i, j].imshow(imgs[i*cols + j])
-            if i*cols + j < len(titles):
-                axes[i, j].set_title(titles[i*cols + j])
-            axes[i, j].set_xticklabels([])
-            axes[i, j].set_yticklabels([])
-    plt.savefig(filename + '.png')
-    plt.close(f)
+    for row_num, row_ax in enumerate(axes, start=1):
+        # Add title to row
+        if row_num-1<len(row_titles): row_ax.set_title(row_titles[row_num-1] + "\n", fontsize=14, loc="left")
+        row_ax.axis('off')
+
+    for i in range(1, rows*cols + 1):
+        # Add subplot to index i-1 within a rows*cols grid
+        ax = f.add_subplot(rows,cols,i)
+        if i-1<len(plot_titles): ax.set_title(plot_titles[i-1], fontsize=11, loc="left")
+        if i-1<len(imgs) and not (imgs[i-1] is None): ax.imshow(imgs[i-1])
+        ax.axis('off')
+
+    plt.tight_layout()
+    f.set_size_inches(cols * 2.5, rows * 3)
+
+    plt.savefig(filename + '.png', dpi=100)
+    plt.show()
 
 def see_example_mnist8():
     data, label = sample_mnist8()
