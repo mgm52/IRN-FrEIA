@@ -4,6 +4,7 @@ from FrEIA.modules.reshapes import HaarDownsampling
 from .freia_custom_coupling import AffineCouplingOneSidedIRN, EnhancedCouplingOneSidedIRN
 from bicubic_pytorch import imresize
 from data import mnist8_iterator
+from loss import calculate_irn_loss
 import FrEIA.framework as ff
 import numpy as np
 import torch
@@ -53,28 +54,6 @@ def sample_inn(inn, mnist8_iter, batch_size=1, use_test_set=False):
 
     return x, y, z, x_recon_from_y
 
-def calculate_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, batch_size):
-    # Loss = Loss_Reconstruction + Loss_Guide + Loss_Distribution_Match_Surrogate
-    # Purpose of Loss_Reconstruction: accurate upscaling
-    loss_recon = lambda_recon * torch.abs(x - x_recon_from_y).sum() / batch_size
-    # Purpose of Loss_Guide: sensible downscaling
-        # Intuition about using L2 here: the most recognisable downscaled images get the most prominant points correct?
-    x_downscaled = imresize(x, sizes=(4, 4))
-    loss_guide = lambda_guide * ((x_downscaled - y)**2).sum() / batch_size
-    # Purpose of Loss_Distribution_Match_Surrogate:
-        # Encouraging the model to always produce things that look like the OG dataset, even when it doesn't know what to do?
-        # And encouraging disentanglement (by forcing z to be a normal dist)?
-        # Full Loss_Distribution_Match does this by measuring JSD between x and x_reconstructed.
-        # Surrogate Loss_Distribution_match does this by measuring CE between z and z_sample.
-    # Paper describes this as: -1 * sum [prob(x from dataset) * log2(prob(z in our normal dist))]
-    # Because prob(x from dataset) is a constant (I believe?): we have -1 * log2(prob(z in our normal dist))
-    # Because surprisal in a standard normal dist is O(x^2): we have z^2
-    loss_distr = lambda_distr * (z**2).sum() / batch_size
-    
-    total_loss = loss_recon + loss_guide + loss_distr
-
-    return loss_recon, loss_guide, loss_distr, total_loss
-
 def test_inn_mnist8(inn,
     lambda_recon=1,
     lambda_guide=1,
@@ -85,7 +64,7 @@ def test_inn_mnist8(inn,
 
     with torch.no_grad():
         x, y, z, x_recon_from_y = sample_inn(inn, mnist8_iter, batch_size=batch_size, use_test_set=True)
-        loss_recon, loss_guide, loss_distr, total_loss = calculate_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, batch_size)
+        loss_recon, loss_guide, loss_distr, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, batch_size)
     
     print(f'loss_recon={loss_recon}, loss_guide={loss_guide}, loss_distr={loss_distr}')
     print(f'Average loss in test set: {total_loss}')
@@ -112,7 +91,7 @@ def train_inn_mnist8(inn,
         optimizer.zero_grad()
         
         x, y, z, x_recon_from_y = sample_inn(inn, mnist8_iter, batch_size=batch_size, use_test_set=False)
-        loss_recon, loss_guide, loss_distr, total_loss = calculate_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, batch_size)
+        loss_recon, loss_guide, loss_distr, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, batch_size)
         
         losses.append(total_loss)
 
