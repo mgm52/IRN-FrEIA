@@ -24,7 +24,7 @@ def train_inn_fc_mnist8(inn, mnist8_iter, min_loss=0.8, max_iters=10000, pytorch
         if pytorch_mode:
             x = torch.tensor(data, dtype=torch.float32, device=device)
             z, log_jac_det = inn(x)
-            loss = 0.5*torch.sum(z[0]**2) - log_jac_det
+            loss = 0.5*torch.sum(z**2) - log_jac_det
 
         else:
             x = torch.Tensor(np.array([data]))
