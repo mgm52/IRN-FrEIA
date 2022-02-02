@@ -1,5 +1,7 @@
 # Invertible Image Rescaling with FrEIA
 
+![Example output!](/output/out_1643816086_0.png "Example output")
+
 ## Todo
 
 ### Immediate next steps
