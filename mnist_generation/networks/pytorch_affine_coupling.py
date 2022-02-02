@@ -4,12 +4,12 @@ import numpy as np
 
 class AffineCoupling(nn.Module):
     
-    def __init__(self, channels, device):
+    def __init__(self, channels, device, subnet_constructor):
         super(AffineCoupling, self).__init__()
         self.channels = channels
         assert not self.channels<2, f'Cannot create a coupling layer with fewer than 2 channels. Channels supplied: {self.channels}'
 
-        self.net = nn.Sequential(nn.Linear(self.channels//2, 512), nn.ReLU(), nn.Linear(512,  self.channels))
+        self.net = subnet_constructor(self.channels//2, self.channels)
         self.to(device)
 
     def forward(self, x:torch.Tensor, log_jac_det=None, rev=False):

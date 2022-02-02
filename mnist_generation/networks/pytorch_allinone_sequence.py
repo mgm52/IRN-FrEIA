@@ -4,12 +4,12 @@ from .pytorch_allinone import AllInOne
 
 class AllInOneSequence(nn.Module):
     
-    def __init__(self, num_blocks, device, channels):
+    def __init__(self, num_blocks, device, channels, subnet_constructor):
         super(AllInOneSequence, self).__init__()
         
         self.blocks = nn.ModuleList()
         for i in range(num_blocks):
-            self.blocks.append(AllInOne(channels,device))
+            self.blocks.append(AllInOne(channels,device,subnet_constructor))
 
         self.device = device
         self.to(device)
