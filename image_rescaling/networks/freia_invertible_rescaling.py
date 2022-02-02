@@ -2,7 +2,7 @@ from math import floor
 from tokenize import Double
 from FrEIA.modules.reshapes import HaarDownsampling
 from .freia_custom_coupling import AffineCouplingOneSidedIRN, EnhancedCouplingOneSidedIRN
-from bicubic_pytorch import imresize
+from bicubic_pytorch.core import imresize
 from data import mnist8_iterator
 from loss import calculate_irn_loss
 import FrEIA.framework as ff
@@ -63,6 +63,7 @@ def test_inn_mnist8(inn,
     mnist8_iter = mnist8_iterator()
 
     with torch.no_grad():
+        # todo: use batch_size=-1 instead, then check that it works
         x, y, z, x_recon_from_y = sample_inn(inn, mnist8_iter, batch_size=batch_size, use_test_set=True)
         loss_recon, loss_guide, loss_distr, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, batch_size)
     

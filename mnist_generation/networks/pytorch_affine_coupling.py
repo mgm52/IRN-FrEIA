@@ -14,9 +14,6 @@ class AffineCoupling(nn.Module):
 
     def forward(self, x:torch.Tensor, log_jac_det=None, rev=False):
         x_a, x_b  = x.chunk(2)
-        print(x)
-        print(x_a)
-        print(x_b)
         log_s, t = self.net(x_b).chunk(2)
 
         # Previous authors use sigmoid instead of exp here for stability

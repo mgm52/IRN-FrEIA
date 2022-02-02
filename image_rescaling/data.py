@@ -79,9 +79,12 @@ def process_4bit_img(data, shape, clip_values=True, floor_values=True):
 
     return im
 
-def see_img(im):
+def see_img(im, see=True, save=False, filename="out"):
     plt.imshow(im)
-    plt.show()
+
+    if(save): plt.savefig(filename + '.png')
+    if(see): plt.show()
+    if(not see): plt.close()
 
 def see_multiple_imgs(imgs, rows, cols, row_titles=[], plot_titles=[], see=True, save=False, filename="out"):
     assert rows*cols >= len(imgs), f'Cannot print {len(imgs)} images on a {rows}x{cols} grid'
@@ -103,8 +106,9 @@ def see_multiple_imgs(imgs, rows, cols, row_titles=[], plot_titles=[], see=True,
     plt.tight_layout()
     f.set_size_inches(cols * 2.5, rows * 3)
 
-    plt.savefig(filename + '.png', dpi=100)
-    plt.show()
+    if(save): plt.savefig(filename + '.png', dpi=100)
+    if(see): plt.show()
+    if(not see): plt.close()
 
 def see_example_mnist8():
     data, label = sample_mnist8()

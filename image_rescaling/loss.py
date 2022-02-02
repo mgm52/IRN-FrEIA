@@ -1,5 +1,5 @@
 import torch
-from bicubic_pytorch import imresize
+from bicubic_pytorch.core import imresize
 
 def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, batch_size):
     # Purpose of Loss_Reconstruction: accurate upscaling

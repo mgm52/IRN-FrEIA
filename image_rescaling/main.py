@@ -2,7 +2,7 @@
 import time
 from networks.freia_invertible_rescaling import IRN, train_inn_mnist8, sample_inn
 from data import mnist8_iterator, process_4bit_img, see_multiple_imgs
-from bicubic_pytorch import imresize
+from bicubic_pytorch.core import imresize
 import torch
 import torchmetrics
 import matplotlib.pyplot as plt
@@ -10,7 +10,7 @@ plt.rcParams["font.family"] = "serif"
 #from IQA_pytorch import SSIM, DISTS
 
 inn = IRN(3, 8, 8, ds_count=1, inv_per_ds=2)
-train_inn_mnist8(inn, max_batches=1000, max_epochs=-1, target_loss=-1, learning_rate=0.001, batch_size=500,
+train_inn_mnist8(inn, max_batches=1, max_epochs=-1, target_loss=-1, learning_rate=0.001, batch_size=500,
                  lambda_recon=1, lambda_guide=2, lambda_distr=1)
 
 # mnist8 consists of 16-tone images
@@ -46,7 +46,7 @@ for i in range(10):
             "HR (-)", "GT [Bi-down] (∞)", "IRN-down (%.2f)" % round(psnr_irn_down.item(), 2),
             "GT [HR] (∞)", "Bi-down & Bi-up (%.2f)" % round(psnr_bi_up.item(), 2), "IRN-down & IRN-up (%.2f)" % round(psnr_irn_up.item(), 2)
         ],
-        see=True, save=True,
+        see=True, save=False,
         filename=f'output/out_{int(time.time())}_{i}'
     )
 
