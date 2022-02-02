@@ -27,7 +27,8 @@ def IRN(*dims, ds_count=1, inv_per_ds=1):
         inn.append(HaarDownsampling, order_by_wavelet=True)
         for i in range(0, inv_per_ds):
             inn.append(EnhancedCouplingOneSidedIRN, subnet_constructor=subnet)
-    return inn.cuda()
+    if device=="cuda": return inn.cuda()
+    return inn
 
 def sample_inn(inn, mnist8_iter, batch_size=1, use_test_set=False):
     x = mnist8_iter.iterate_mnist8_imgs(count=batch_size, use_test_data=use_test_set)

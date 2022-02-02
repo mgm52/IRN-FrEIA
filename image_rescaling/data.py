@@ -1,5 +1,4 @@
 # Get dataset
-from tkinter import CENTER
 import numpy as np
 import matplotlib.pyplot as plt
 import random
