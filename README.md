@@ -1,5 +1,6 @@
 # Invertible Image Rescaling with FrEIA
 
+*Example results on an mnist8 test set after 250 epochs (1 minute training time on an RTX 3080 GPU):*
 ![Example output!](/output/out_1643816086_0.png "Example output")
 
 ## Todo
