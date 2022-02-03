@@ -5,31 +5,9 @@ import random
 from sklearn.datasets import make_moons
 from sklearn.datasets import load_digits
 
-
-mnist8_data, mnist8_labels = load_digits(return_X_y=True)
-def sample_mnist8():
-    i = random.randint(0, len(mnist8_data)-1)
-    data = np.array(mnist8_data[i])
-    label = mnist8_labels[i]
-
-    data.resize(8*8)
-    return data, label
-
-def sample_mnist8_imgs(count=1, use_test_data=False):
-    test_limit = np.ceil(len(mnist8_data) * 0.9)
-    samples = []
-    for j in range(count):
-        if not use_test_data: i = random.randint(0, test_limit)
-        else: i = random.randint(test_limit, len(mnist8_data)-1)
-
-        data = np.array(mnist8_data[i])
-        samples.append(data)
-    return samples
-
 class mnist8_iterator:
-
     def __init__(self, shuffle_data=True):
-        self.dataset = mnist8_data
+        self.dataset, _ = load_digits(return_X_y=True)
         if shuffle_data: np.random.shuffle(self.dataset)
 
         self.current_train_epoch = -1
@@ -54,16 +32,6 @@ class mnist8_iterator:
             samples.append(data)
         return samples
 
-def see_mnist8(data, label=-1, clip_values=True, floor_values=True):
-    if label > -1: print(f'Digit label: {label}')
-
-    im = np.array(data)
-    size = int(np.sqrt(im.size))
-    assert size==np.sqrt(im.size), f'see_mnist8 only accepts square images - given {im.size}, wanted {size*size}'
-
-    im = process_4bit_img(data, (size, size), clip_values=clip_values, floor_values=floor_values)
-    see_img(im)
-
 def process_4bit_img(data, shape, clip_values=True, floor_values=True):
     im = np.array(data.detach().cpu().numpy())
     assert np.prod(shape) == np.size(im), f'see_4bit_img given a shape ({shape}) that doesnt match element count {np.size(im)} - expected {np.prod(shape)} elements instead'
@@ -78,13 +46,6 @@ def process_4bit_img(data, shape, clip_values=True, floor_values=True):
     if floor_values: im = np.floor(im)
 
     return im
-
-def see_img(im, see=True, save=False, filename="out"):
-    plt.imshow(im)
-
-    if(save): plt.savefig(filename + '.png')
-    if(see): plt.show()
-    if(not see): plt.close()
 
 def see_multiple_imgs(imgs, rows, cols, row_titles=[], plot_titles=[], see=True, save=False, filename="out"):
     assert rows*cols >= len(imgs), f'Cannot print {len(imgs)} images on a {rows}x{cols} grid'
@@ -109,7 +70,3 @@ def see_multiple_imgs(imgs, rows, cols, row_titles=[], plot_titles=[], see=True,
     if(save): plt.savefig(filename + '.png', dpi=100)
     if(see): plt.show()
     if(not see): plt.close()
-
-def see_example_mnist8():
-    data, label = sample_mnist8()
-    see_mnist8(data, label)
