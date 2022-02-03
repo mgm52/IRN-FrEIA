@@ -7,8 +7,9 @@
 
 ### Immediate next steps
 
-- Output test metrics: PSNR and FID, and log-likelihood for mnist generation
+- Output test metrics: ~~PSNR and FID, and~~ log-likelihood for mnist generation
 - Train on higher resolutions, making use of pytorch DataLoader
+- Investigate why using ActNorm makes my pytorch implementation deviate more from FrEIA, and why FrEIA doesn't seem to quite use actnorm in allinone (?)
 - Clean up and comment on code
 - Organise code into access, assess, address format (neil's "fynesse" template)
 
