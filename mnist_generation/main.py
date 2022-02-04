@@ -2,6 +2,7 @@
 from cgi import test
 import data as data_functions
 import torch
+import math
 import numpy as np
 from networks.freia_nets import get_inn_fc_freia
 from networks.pytorch_nets import get_inn_fc_pt
@@ -11,6 +12,9 @@ from data import mnist8_iterator
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 def train_inn_fc_mnist8(inn, mnist8_iter, min_loss=0.8, max_iters=10000, pytorch_mode=False):
+    #for name, param in inn.named_parameters():
+    #    if param.requires_grad: print(name)
+
     optimizer = torch.optim.Adam(inn.parameters(), lr=0.001)
 
     i = 0
@@ -36,10 +40,10 @@ def train_inn_fc_mnist8(inn, mnist8_iter, min_loss=0.8, max_iters=10000, pytorch
 
         if i%250==249:
             avg_loss = sum(losses) / len(losses)
-            if pytorch_mode:
-                print(len(z))
-            else:
-                print(z.shape)
+           # if pytorch_mode:
+                #print(len(z))
+            #else:
+                #print(z.shape)
             print(f'Avg loss across parameters, in last 250 samples: {avg_loss}')
             losses = []
         
@@ -79,36 +83,58 @@ def compute_mnist8_fid_score(inn, device):
 
     return fid_val
 
-# Takes input x shape (1, 64) or possibly (64)
-# Gives output z shape (64)
-def full_inn_fc_mnist8_example(mnist8_iter):
-    inn = get_inn_fc_freia()
-    train_inn_fc_mnist8(inn, mnist8_iter, 0.8, 10, False)
-    see_mnist8_results(inn, 0)
-    return inn
+def log_standard_normal_pdf(x):
+    return -0.5 * torch.sum(math.log(2 * math.pi) + (x**2))
 
-# Takes input x shape (64)
-# Gives output z shape (1, 64)
-def full_inn_fc_mnist8_pt_example(mnist8_iter):
-    inn = get_inn_fc_pt(device=device)
-    train_inn_fc_mnist8(inn, mnist8_iter, 0.5, 20000, True)
-    #see_mnist8_results(inn, 5)
-    return inn
+# Higher likelihood = better
+def compute_log_likelihood(inn, device, pytorch_mode):
+    # Acquire test data in mnist8_iter format (179, 64)
+    test_data = torch.tensor(mnist8_iter.iterate_mnist8_imgs(-1, True), device=device)
+
+    # Acquire "fake" data
+    # Go from mnist8_iter format (179, 64) to ncwh format (179, 3, 8, 8)
+    log_likelihoods = []
+    for i in range(len(test_data)):
+        x = torch.tensor(test_data[i], dtype=torch.float32, device=device)
+        if not pytorch_mode: x = x.reshape(1, 64)
+
+        z, log_jac_det = inn(x)
+        log_likelihood = log_standard_normal_pdf(z).item() + log_jac_det.item()
+        log_likelihoods.append(log_likelihood)
+
+    return sum(log_likelihoods) / len(log_likelihoods)
 
 mnist8_iter = mnist8_iterator()
 
 inn_freia = get_inn_fc_freia()
-train_inn_fc_mnist8(inn_freia, mnist8_iter, -1, 1000, False)
-
 inn_pt = get_inn_fc_pt(device=device)
-train_inn_fc_mnist8(inn_pt, mnist8_iter, -1, 1000, True)
 
-see_mnist8_results(inn_freia, 5, device="cpu")
-see_mnist8_results(inn_pt, 5, device=device)
+to_train=5000
+while True:
+    print("---------- STARTING TRAINING LOOP -------------")
+    print(to_train)
+    print("Training freia")
+    train_inn_fc_mnist8(inn_freia, mnist8_iter, -1, to_train, False)
+    print("Training pt")
+    train_inn_fc_mnist8(inn_pt, mnist8_iter, -1, to_train, True)
 
-# Lower fid better
-fid_freia = compute_mnist8_fid_score(inn_freia, device="cpu")
-fid_pt = compute_mnist8_fid_score(inn_pt, device=device)
+    print("--- Viewing freia examples ---")
+    see_mnist8_results(inn_freia, 5, device="cpu")
+    print("--- Viewing pt examples ---")
+    see_mnist8_results(inn_pt, 5, device=device)
 
-print(fid_freia)
-print(fid_pt)
+    # Higher likelihood better
+    ll_freia = compute_log_likelihood(inn_freia, device="cpu", pytorch_mode=False)
+    ll_pt = compute_log_likelihood(inn_pt, device=device, pytorch_mode=True)
+
+    print(f'FrEIA log likelihood: {ll_freia}')
+    print(f'Pytorch log likelihood: {ll_pt}')
+
+    # Lower fid better
+    fid_freia = compute_mnist8_fid_score(inn_freia, device="cpu")
+    fid_pt = compute_mnist8_fid_score(inn_pt, device=device)
+
+    print(f'FrEIA FID: {fid_freia.item()}')
+    print(f'Pytorch FID: {fid_pt.item()}')
+
+    to_train *= 2

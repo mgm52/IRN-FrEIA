@@ -11,5 +11,5 @@ def subnet_fc(dims_in, dims_out):
 def get_inn_fc_freia():
     inn = Ff.SequenceINN(8 * 8)
     for k in range(4):
-        inn.append(Fm.AllInOneBlock, subnet_constructor=subnet_fc, permute_soft=True)
+        inn.append(Fm.AllInOneBlock, subnet_constructor=subnet_fc, permute_soft=False)
     return inn

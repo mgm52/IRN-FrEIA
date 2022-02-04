@@ -7,3 +7,4 @@ torchmetrics==0.7.0
 torch-fidelity==0.3.0
 git+https://github.com/VLL-HD/FrEIA.git
 git+https://github.com/sanghyun-son/bicubic_pytorch.git
+git+https://github.com/Coloquinte/torchSR.git

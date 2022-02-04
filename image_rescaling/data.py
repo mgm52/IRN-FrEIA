@@ -32,17 +32,40 @@ class mnist8_iterator:
             samples.append(data)
         return samples
 
-def process_4bit_img(data, shape, clip_values=True, floor_values=True):
+def process_div2k_img(data, shape):
     im = np.array(data.detach().cpu().numpy())
-    assert np.prod(shape) == np.size(im), f'see_4bit_img given a shape ({shape}) that doesnt match element count {np.size(im)} - expected {np.prod(shape)} elements instead'
+    assert np.prod(shape) == np.size(im), f'process_xbit_img given a shape ({shape}) that doesnt match element count {np.size(im)} - expected {np.prod(shape)} elements instead'
 
     im.resize(*shape)
+    # Convert from (c, w, h) format to (w, h, c)
+    im = np.moveaxis(im, 0, -1)
+
+    #im = im * scaling
 
     print(f'Max in {shape} image: {np.amax(im)}')
     print(f'Median in {shape} image: {np.median(im)}')
     print(f'Min in {shape} image: {np.amin(im)}')
 
-    if clip_values: im = np.clip(im, 0, 16)
+    #max_color = pow(2, bits)
+    #if clip_values: im = np.clip(im, 0, max_color)
+    #if floor_values: im = np.floor(im)
+
+    return im
+
+def process_xbit_img(data, shape, clip_values=True, floor_values=True, bits=4, scaling=1):
+    im = np.array(data.detach().cpu().numpy())
+    assert np.prod(shape) == np.size(im), f'process_xbit_img given a shape ({shape}) that doesnt match element count {np.size(im)} - expected {np.prod(shape)} elements instead'
+
+    im.resize(*shape)
+
+    im = im * scaling
+
+    print(f'Max in {shape} image: {np.amax(im)}')
+    print(f'Median in {shape} image: {np.median(im)}')
+    print(f'Min in {shape} image: {np.amin(im)}')
+
+    max_color = pow(2, bits)
+    if clip_values: im = np.clip(im, 0, max_color)
     if floor_values: im = np.floor(im)
 
     return im
