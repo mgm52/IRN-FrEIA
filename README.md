@@ -77,6 +77,7 @@
 - Idea: make the downscaling/upscaling technique durable to other forms of compression? Could add an additional loss term: reconstruction of x from JPEG-compressed y.
 
 - Idea: steganography! Given LR and HR, return HR_steg which resembles HR but hides LR, and return latent vector z. (LR, HR) <-> (z, HR_steg)
+	- In fact, perhaps I could achieve steganography just by constraining LR to resemble a specific image??? Then we can produce a range of similar-looking images of one thing, which actually map to other stuff.
 
 ### Writeup details
 
