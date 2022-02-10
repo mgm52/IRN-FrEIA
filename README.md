@@ -17,20 +17,26 @@
 
 - Idea: use a more visually meaningful loss function ("IQA" - image quality assessment) for reconstruction & downscaling, instead of just MSE.
   - For example, use DISTS (https://arxiv.org/pdf/2004.07728.pdf implemented https://github.com/dingkeyan93/IQA-optimization) in combination with MSE (as is done here, equation 2 page 2 https://openaccess.thecvf.com/content/CVPR2021W/CLIC/papers/Wang_Subjective_Quality_Optimized_Efficient_Image_Compression_CVPRW_2021_paper.pdf)
+  - *[Param] There's been a lot of work on using a "visually meaningful loss". Most people use LPIPS or some other loss based on VGG-net. Within our group, we recently had a related project documented in a [blog](https://towardsdatascience.com/perceptual-losses-for-image-restoration-dd3c9de4113). Although I wasn't involved, I can setup a quick chat with one of the authors to see what they think.*
   - Can I equate some of the properties of JPEG in a loss function? (to make our IQA closer to human perception, and/or to make the model more resiliant to jpeg compression).
     - e.g. chromas subsampling, by which we have a higher penalty for deviating in luma than in colour
+  - *[Param] Variational dequantization looks particularly appealing for compression (https://arxiv.org/abs/1902.00275). There's a nice implementation [here](https://github.com/didriknielsen/survae_flows/blob/master/survae/transforms/surjections/dequantization_variational.py).*
 
 - Hunt down bottlenecks in training time: is it due to fetching samples?
+  - *[Param] Most likely it is fetching data. With CSD3, each node has 1000 Gb RAM. You can load the entire dataset into main memory; eliminate all file-based i/o during training.*
 
 - The first Haar block literally produces a (bicubic?) downscaled image of x. Instead of downscaling later, could I use a graph network to extract the first Haar downscaled image? Or I could define a custom inn which calls HDS then the rest of the network.
+  - *[Param] You loose invertibility if you use a graph network. I think it's best to leave the Haar block as it is. It already performs the important task of frequency decomposition in an invertible way.*
 
 - The main advantage and main constraint of normalizing flows is producing a tractably computable jacobian. The IRN model does not make use of it. Can we use more expressive coupling layers because of this?
+  - *[Param] I totally agree with you, and had thought about this for another project. Unfortunately, there isn't a lot of work on expressible invertible architectures that don't require explicit likelihood. The best resource is probably Table 1 in [this paper](https://arxiv.org/pdf/1811.00995.pdf).*
+  - *[Param] One of these is implemented in Freia. See if [this layer](https://vll-hd.github.io/FrEIA/_build/html/FrEIA.modules.html#FrEIA.modules.IResNetLayer) helps your network.*
 
 - Try using an adversarial loss function - i.e. train a network to predict whether, given a LR and HR image, the HR is upscaled or GT.
 	- Paper actually does this in the full Loss_distr_match. Says that GAN training is unstable however.
+	- *[Param] See discussion on perceptual loss*
 
 - Explore tips and tricks FrEIA page https://vll-hd.github.io/FrEIA/_build/html/tutorial/tips_tricks_faq.html
-
 ### Open experiments
 
 - Is the loss_distribution_match term really necessary? Seems to me that it just bolsters the reconstruction loss metric. How do results compare if I drop loss_dist_match and put more emphasis on recon?
