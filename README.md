@@ -84,6 +84,7 @@
 
 - Idea: steganography! Given LR and HR, return HR_steg which resembles HR but hides LR, and return latent vector z. (LR, HR) <-> (z, HR_steg)
 	- In fact, perhaps I could achieve steganography just by constraining LR to resemble a specific image??? Then we can produce a range of similar-looking images of one thing, which actually map to other stuff.
+	- *[Param] You might want to check [this paper](https://openaccess.thecvf.com/content/CVPR2021/papers/Lu_Large-Capacity_Image_Steganography_Based_on_Invertible_Neural_Networks_CVPR_2021_paper.pdf). FOund it when I was reading about a different, completely unrelated project!*
 
 ### Writeup details
 
