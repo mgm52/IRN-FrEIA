@@ -32,7 +32,8 @@ class EnhancedCouplingOneSidedIRN(coupling_layers._BaseCouplingBlock):
         self.split_len1 = 3
         self.split_len2 = self.channels - 3
 
-        self.phi = subnet_constructor(self.split_len2, self.split_len1)
+        self.phi = subnet_constructor(self.split_len2, self.split_len1) 
+        # idea: try using batchnorm on these two?
         self.rho = subnet_constructor(self.split_len1, self.split_len2)
         self.mu = subnet_constructor(self.split_len1, self.split_len2)
 

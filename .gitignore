@@ -4,6 +4,9 @@
 /mnist_generation/networks/__pycache__/*
 /mnist_generation/__pycache__
 /output
+/data
+/wandb
+/saved_models
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

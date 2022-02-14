@@ -5,4 +5,6 @@ torch
 IQA_pytorch
 torchmetrics
 torch-fidelity
+wandb
 git+https://github.com/VLL-HD/FrEIA.git
+git+https://github.com/Coloquinte/torchSR.git

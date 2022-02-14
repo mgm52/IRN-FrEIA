@@ -93,6 +93,7 @@ def process_4bit_img(data, shape, clip_values=True, floor_values=True):
 
 def see_img(im, see=True, save=False, filename="out"):
     plt.imshow(im)
+    plt.axis("off")
 
     if(save): plt.savefig(filename + '.png')
     if(see): plt.show()

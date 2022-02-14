@@ -8,7 +8,7 @@ class AllInOne(nn.Module):
     
     def __init__(self, channels, device, subnet_constructor):
         super(AllInOne, self).__init__()
-        self.actnorm  = ActNorm(device)
+        self.actnorm  = ActNorm(channels, device)
         self.coupling = AffineCoupling(channels, device, subnet_constructor)
         self.permutation  = Permutation(channels, device)
         self.to(device)        
