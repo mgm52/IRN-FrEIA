@@ -5,6 +5,6 @@ torch==1.10.0+cu113
 IQA_pytorch==0.1
 torchmetrics==0.7.0
 torch-fidelity==0.3.0
+wandb
 git+https://github.com/VLL-HD/FrEIA.git
-git+https://github.com/sanghyun-son/bicubic_pytorch.git
 git+https://github.com/Coloquinte/torchSR.git
