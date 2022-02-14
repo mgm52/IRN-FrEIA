@@ -1,9 +1,8 @@
-matplotlib==3.5.0
-numpy==1.21.3
-scikit_learn==1.0.2
-torch==1.10.0+cu113
-IQA_pytorch==0.1
-torchmetrics==0.7.0
-torch-fidelity==0.3.0
+matplotlib
+numpy
+scikit_learn
+torch
+IQA_pytorch
+torchmetrics
+torch-fidelity
 git+https://github.com/VLL-HD/FrEIA.git
-git+https://github.com/sanghyun-son/bicubic_pytorch.git

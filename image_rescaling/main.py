@@ -10,12 +10,14 @@ plt.rcParams["font.family"] = "serif"
 #from IQA_pytorch import SSIM, DISTS
 
 inn = IRN(3, 8, 8, ds_count=1, inv_per_ds=2)
-train_inn_mnist8(inn, max_batches=1, max_epochs=-1, target_loss=-1, learning_rate=0.001, batch_size=500,
+train_inn_mnist8(inn, max_batches=1, max_epochs=-1, target_loss=-1, learning_rate=0.001, batch_size=50,
                  lambda_recon=1, lambda_guide=2, lambda_distr=1)
 
 # mnist8 consists of 16-tone images
 mnist8_iter = mnist8_iterator()
-psnr_metric = torchmetrics.PeakSignalNoiseRatio(data_range=16).cuda()
+psnr_metric = torchmetrics.PeakSignalNoiseRatio(data_range=16)
+if torch.cuda.is_available(): psnr_metric = psnr_metric.cuda()
+
 for i in range(10):
     x, y, z, x_recon_from_y = sample_inn(inn, mnist8_iter, batch_size=1, use_test_set=True)
 
@@ -46,7 +48,7 @@ for i in range(10):
             "HR (-)", "GT [Bi-down] (∞)", "IRN-down (%.2f)" % round(psnr_irn_down.item(), 2),
             "GT [HR] (∞)", "Bi-down & Bi-up (%.2f)" % round(psnr_bi_up.item(), 2), "IRN-down & IRN-up (%.2f)" % round(psnr_irn_up.item(), 2)
         ],
-        see=True, save=False,
-        filename=f'output/out_{int(time.time())}_{i}'
+        see=False, save=True,
+        filename=f'/rds/user/mgm52/hpc-work/invertible-image-rescaling/output/out_{int(time.time())}_{i}'
     )
 
