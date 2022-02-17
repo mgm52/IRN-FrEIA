@@ -1,5 +1,8 @@
 ### Enhancements
-
+- Multiscale architecture
+  - The architecture described in the paper downsamples images but retains latents through the entire forward pass. A drawback of this is that after each downsample, the intermediate features have same dimensionality as the original HR image (it has just been reshaped into more channels).
+  - Most papers (including RealNVP, Glow, SRFlow) show that reducing dimensions after downsampling imrpoves generative sample quality quite a bit. The advantage is that you can do more focussed processing with possibly smaller subnets as you go deeper. The channels that are split off are  all added to the latent directly.
+  - I don't know why IRN didn't do this. For image rescaling, using a multiscale architecture is a no-brainer. Here's how you would do this in Freia: [code](https://github.com/VLL-HD/conditional_INNs/blob/master/colorization_minimal_example/model.py) and [paper](https://arxiv.org/pdf/1907.02392.pdf) (see fig. 8) 
 - Idea: use a more visually meaningful loss function ("IQA" - image quality assessment) for reconstruction & downscaling, instead of just MSE.
   - For example, use DISTS (https://arxiv.org/pdf/2004.07728.pdf implemented https://github.com/dingkeyan93/IQA-optimization) in combination with MSE (as is done here, equation 2 page 2 https://openaccess.thecvf.com/content/CVPR2021W/CLIC/papers/Wang_Subjective_Quality_Optimized_Efficient_Image_Compression_CVPRW_2021_paper.pdf)
   - *[Param] There's been a lot of work on using a "visually meaningful loss". Most people use LPIPS or some other loss based on VGG-net. Within our group, we recently had a related project documented in a [blog](https://towardsdatascience.com/perceptual-losses-for-image-restoration-dd3c9de4113). Although I wasn't involved, I can setup a quick chat with one of the authors to see what they think.*
