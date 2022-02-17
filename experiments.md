@@ -22,7 +22,7 @@
 	- *[Param] I wouldn't bother using adversarial (GAN training is frustratingly unstable) or MMD loss (you most likely won't see benifits for high dimensional data).*
 
 - Explore tips and tricks FrEIA page https://vll-hd.github.io/FrEIA/_build/html/tutorial/tips_tricks_faq.html
-### Open experiments
+### Open experiments / questions
 
 - Is the loss_distribution_match term really necessary? Seems to me that it just bolsters the reconstruction loss metric. How do results compare if I drop loss_dist_match and put more emphasis on recon?
   - Paper tried dropping L_distr on page 13. However, it generally only found marginal improvements keeping L_distr, without much discussion.
@@ -72,3 +72,16 @@
 - Idea: steganography! Given LR and HR, return HR_steg which resembles HR but hides LR, and return latent vector z. (LR, HR) <-> (z, HR_steg)
 	- In fact, perhaps I could achieve steganography just by constraining LR to resemble a specific image??? Then we can produce a range of similar-looking images of one thing, which actually map to other stuff.
 	- *[Param] You might want to check [this paper](https://openaccess.thecvf.com/content/CVPR2021/papers/Lu_Large-Capacity_Image_Steganography_Based_on_Invertible_Neural_Networks_CVPR_2021_paper.pdf). FOund it when I was reading about a different, completely unrelated project!*
+
+- Idea: recurrent video prediction.
+	- What if we set up an INN with the following input<->output: [frame n+1][frame n]<->[frame n+2][latent vector].
+	- Or, perhaps a format that's more fitting for coupling layers: [frame n+1][diff(frame n, frame n+1)]<->[frame n+2][latent vector]. This way, by treating [frame n+1] as our h1 to coupling layers, the network with default values will produce something vaguely like: [frame n+1][frame n]<->[distorted frame n+1][latent vector].
+
+- Idea: frame interpolation.
+	- What if we set up an INN with the following input<->output: [frame n+2][diff(frame n, frame n+2)]<->[frame n+1][latent vector].
+
+- Idea: video rescaling.
+	- This was an idea Cengiz actually suggested during my progress presentation.
+	- We would need some mechanism to ensure temporal stability across frames.
+		- Simplest way: replace our loss function with a GAN that discriminates between GT pairs of frames and irn-upscaled pairs, as well as between bicubic-downscaled pairs and irn-downscaled pairs. In fact, we may be able to get away without even changing the model architecture at all: just expect it to learn to up/downscale in a more stable manner given the loss function.
+		- More creative way: instead of comparing two frames using a GAN, take any image and synthesize a "next frame" by adding random noise, translation, rescaling, rotation, etc. For our loss function, check that `irn_downupscaled(gt_img)->irn_downupscaled(distort(gt_img))` is the same transformation as `gt_img->distort(gt_img)`. In other words, check that `irn_downupscaled(distort(gt_img)) == distort(irn_downupscaled(gt_img))`. To make it more accurate-to-life I could perhaps replace `distort()` with an optical-flow based motion prediction from real frames or some such.
