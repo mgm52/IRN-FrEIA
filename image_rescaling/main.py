@@ -14,6 +14,13 @@ import matplotlib.pyplot as plt
 plt.rcParams["font.family"] = "serif"
 #from IQA_pytorch import SSIM, DISTS
 
+# input should be size (n, 3, h, w) - in range [0,1]
+# output has size (n, 1, h, w) - treat the output as if it has range [0,255]
+def rgb_to_y(rgb_imgs):
+  rgb_imgs *= 255
+  output = (rgb_imgs[:,0,:,:] * 65.481 + rgb_imgs[:,1,:,:] * 128.553 + rgb_imgs[:,2,:,:] * 24.966)/255.0 + 16
+  return output.unsqueeze(dim=1)
+
 def see_irn_example(x, y, z, x_recon_from_y, see=True, save=True, name=0, index=-1):
     print("-> About to visualize irn example")
     i = random.randint(0, len(x)-1) if index==-1 else index
@@ -35,6 +42,7 @@ def see_irn_example(x, y, z, x_recon_from_y, see=True, save=True, name=0, index=
 
     # Test the network
     # mnist8 consists of 16-tone images
+    # TODO: report y psnr
     psnr_metric = torchmetrics.PeakSignalNoiseRatio(data_range=16).cuda()
 
     psnr_irn_down = psnr_metric(y[i], x_downscaled_bc) # IRN-down  vs  GT (Bicubic-down)
@@ -42,13 +50,13 @@ def see_irn_example(x, y, z, x_recon_from_y, see=True, save=True, name=0, index=
     psnr_irn_up = psnr_metric(x_recon_from_y[i], x[i]) # IRN-down / IRN-up  vs  GT (HR)
 
     ssim_metric = torchmetrics.StructuralSimilarityIndexMeasure(data_range=16).cuda()
-    ssim_irn_down = ssim_metric(y[i], x_downscaled_bc) # IRN-down  vs  GT (Bicubic-down)
-    ssim_bi_up = ssim_metric(x_upscaled_bc, x[i]) # Bicubic-down / Bicubic-up  vs  GT (HR)
-    ssim_irn_up = ssim_metric(x_recon_from_y[i], x[i]) # IRN-down / IRN-up  vs  GT (HR)
+    ssim_irn_down = ssim_metric(torch.unsqueeze(y[i], dim=0), torch.unsqueeze(x_downscaled_bc, dim=0)) # IRN-down  vs  GT (Bicubic-down)
+    ssim_bi_up = ssim_metric(torch.unsqueeze(x_upscaled_bc, dim=0), torch.unsqueeze(x[i], dim=0)) # Bicubic-down / Bicubic-up  vs  GT (HR)
+    ssim_irn_up = ssim_metric(torch.unsqueeze(x_recon_from_y[i], dim=0), torch.unsqueeze(x[i], dim=0)) # IRN-down / IRN-up  vs  GT (HR)
 
     fig = see_multiple_imgs(imgs, 2, 3,
         row_titles=[
-            "Downscaling task (PSNR/SSIM)",
+            "Downscaling task (PSNR(RGB)/SSIM)",
             "Downscaling & upscaling task (PSNR/SSIM)"],
         plot_titles=[
             "HR (-)", "GT [Bi-down] (∞)", f"IRN-down ({round(psnr_irn_down.item(), 2)}/{round(ssim_irn_down.item(), 4)})",
@@ -103,16 +111,18 @@ def test_inn(inn,
 
     if calculate_metrics:
         psnr_metric = torchmetrics.PeakSignalNoiseRatio(data_range=16).cuda()
-        psnr = psnr_metric(x_recon_from_y, x)
+        psnr_RGB = psnr_metric(x_recon_from_y, x)
+        psnr_Y = psnr_metric(rgb_to_y(x_recon_from_y/16)*16.0/255.0, rgb_to_y(x/16)*16.0/255.0)
 
         ssim_metric = torchmetrics.StructuralSimilarityIndexMeasure(data_range=16).cuda()
         ssim = ssim_metric(x_recon_from_y, x)
-        print(f'Average PSNR/SSIM in test set: {round(float(psnr), 4)}/{round(float(ssim), 4)}')
+        print(f'Average PSNR(RGB)/SSIM in test set: {round(float(psnr_RGB), 4)}/{round(float(ssim), 4)}')
     else:
-        psnr = -1
+        psnr_RGB = -1
+        psnr_Y = -1
         ssim = -1
 
-    return float(total_loss), float(psnr), float(ssim), float(loss_recon), float(loss_guide), float(loss_distr)
+    return float(total_loss), float(psnr_RGB), float(psnr_Y), float(ssim), float(loss_recon), float(loss_guide), float(loss_distr)
 
 def save_network(inn, name):
     save_filename = f"saved_models/model_{int(time.time())}_{name}.pth"
@@ -171,7 +181,7 @@ def train_inn(inn, dataloaders: DataLoaders,
             print(f'loss_recon={loss_recon}, loss_guide={loss_guide}, loss_distr={loss_distr}')
             print(f'Avg training loss, in last {epochs_between_tests if epoch>0 else 0} epochs: {avg_training_loss}')
             print(f'In test dataset:')
-            test_loss, test_psnr, test_ssim, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, lambda_recon, lambda_guide, lambda_distr, calculate_metrics=True)
+            test_loss, test_psnr_rgb, test_psnr_y, test_ssim, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, lambda_recon, lambda_guide, lambda_distr, calculate_metrics=True)
             all_test_losses.append(test_loss)
             print("")
             recent_training_losses = []
@@ -193,10 +203,10 @@ def train_inn(inn, dataloaders: DataLoaders,
                 print(f"We are saving at {batch_no+1} batches, {epoch} epochs...")
                 save_network(inn, f"{round(epoch, 2)}_{round(all_test_losses[-1], 2)}")
 
-            wandb.log({"train_loss": avg_training_loss, "test_loss": test_loss, "test_psnr": test_psnr, "test_ssim": test_ssim, "test_loss_recon": test_lossr, "test_loss_guide": test_lossg, "test_loss_distr": test_lossd, "epoch": epoch}, step=samples)
+            wandb.log({"train_loss": avg_training_loss, "test_loss": test_loss, "test_psnr": test_psnr_rgb, "test_psnr_y": test_psnr_y, "test_ssim": test_ssim, "test_loss_recon": test_lossr, "test_loss_guide": test_lossg, "test_loss_distr": test_lossd, "epoch": epoch}, step=samples)
 
         total_loss.backward()
-        if use_grad_clipping: torch.nn.utils.clip_grad_norm_(inn.parameters(), max_norm=10.0)
+        if use_grad_clipping: torch.nn.utils.clip_grad_norm_(inn.parameters(), max_norm=2.0)
         optimizer.step()
         batch_no+=1
     return all_training_losses, all_test_losses
@@ -214,8 +224,8 @@ with wandb.init(
         "lambda_recon": 100,
         "lambda_guide": 20,
         "lambda_distr": 0.01,
-        "initial_learning_rate": 0.002,
-        "img_size": 256,
+        "initial_learning_rate": 0.001,
+        "img_size": 144,
         "ds_count": 1, # rescaling factor = 2^ds_count
         "inv_per_ds": 3,
         "seed": 0,
@@ -235,8 +245,8 @@ with wandb.init(
     # Train the network
     inn = IRN(3, config.img_size, config.img_size, ds_count=config.ds_count, inv_per_ds=config.inv_per_ds)
     all_training_losses, all_test_losses = train_inn(inn, dataloaders,
-                                                    max_batches=-1, max_epochs=60, target_loss=-1,
-                                                    epochs_between_tests=1.5, epochs_between_samples=0.1, epochs_between_saves=0.1, 
+                                                    max_batches=-1, max_epochs=-1, target_loss=-1,
+                                                    epochs_between_tests=1.5, epochs_between_samples=6, epochs_between_saves=6, 
                                                     learning_rate=config.initial_learning_rate, use_grad_clipping=config.use_grad_clipping,
                                                     lambda_recon=config.lambda_recon, lambda_guide=config.lambda_guide, lambda_distr=config.lambda_distr)
     #plt.savefig(f'output/test_loss_{int(time.time())}_{int(all_test_losses[-1])}', dpi=100)
