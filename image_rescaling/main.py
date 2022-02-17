@@ -41,13 +41,18 @@ def see_irn_example(x, y, z, x_recon_from_y, see=True, save=True, name=0, index=
     psnr_bi_up = psnr_metric(x_upscaled_bc, x[i]) # Bicubic-down / Bicubic-up  vs  GT (HR)
     psnr_irn_up = psnr_metric(x_recon_from_y[i], x[i]) # IRN-down / IRN-up  vs  GT (HR)
 
+    ssim_metric = torchmetrics.StructuralSimilarityIndexMeasure(data_range=16).cuda()
+    ssim_irn_down = ssim_metric(y[i], x_downscaled_bc) # IRN-down  vs  GT (Bicubic-down)
+    ssim_bi_up = ssim_metric(x_upscaled_bc, x[i]) # Bicubic-down / Bicubic-up  vs  GT (HR)
+    ssim_irn_up = ssim_metric(x_recon_from_y[i], x[i]) # IRN-down / IRN-up  vs  GT (HR)
+
     fig = see_multiple_imgs(imgs, 2, 3,
         row_titles=[
-            "Downscaling task (PSNR)",
-            "Downscaling & upscaling task (PSNR)"],
+            "Downscaling task (PSNR/SSIM)",
+            "Downscaling & upscaling task (PSNR/SSIM)"],
         plot_titles=[
-            "HR (-)", "GT [Bi-down] (∞)", "IRN-down (%.2f)" % round(psnr_irn_down.item(), 2),
-            "GT [HR] (∞)", "Bi-down & Bi-up (%.2f)" % round(psnr_bi_up.item(), 2), "IRN-down & IRN-up (%.2f)" % round(psnr_irn_up.item(), 2)
+            "HR (-)", "GT [Bi-down] (∞)", f"IRN-down ({round(psnr_irn_down.item(), 2)}/{round(ssim_irn_down.item(), 4)})",
+            "GT [HR] (∞)", f"Bi-down & Bi-up ({round(psnr_bi_up.item(), 2)}/{round(ssim_bi_up.item(), 4)})", f"IRN-down & IRN-up ({round(psnr_irn_up.item(), 2)}/{round(ssim_irn_up.item(), 4)})"
         ],
         see=see, save=save,
         filename=f'output/out_{int(time.time())}_{i}_{name}'
