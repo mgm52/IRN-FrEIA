@@ -53,7 +53,7 @@ class EnhancedCouplingOneSidedIRN(coupling_layers._BaseCouplingBlock):
         j = -1
         if rev:
             rho_x1 = self.rho(x1)
-            rho_x1 = self.clamp + self.f_clamp(rho_x1)
+            rho_x1 = self.clamp * self.f_clamp(rho_x1)
             y2 = (x2 - self.mu(x1)) * torch.exp(-rho_x1)
             y1 = x1 - self.phi(y2)
 
@@ -65,7 +65,7 @@ class EnhancedCouplingOneSidedIRN(coupling_layers._BaseCouplingBlock):
             # The IRN doesn't replace exp, but it does buffer it with sigmoid
             y1 = x1 + self.phi(x2)
             rho_y1 = self.rho(y1)
-            rho_y1 = self.clamp + self.f_clamp(rho_y1)
+            rho_y1 = self.clamp * self.f_clamp(rho_y1)
             y2 = x2 * torch.exp(rho_y1) + self.mu(y1)
             # TODO: Check that this jacobian calcuation is correct
             if jac: j = torch.sum(rho_y1, dim=tuple(range(1, self.ndims + 1)))
