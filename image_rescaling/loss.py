@@ -8,6 +8,8 @@ def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_reco
     # Purpose of Loss_Guide: sensible downscaling
         # Intuition about using L2 here: the most recognisable downscaled images get the most prominant points correct?
         # --> for this reason L2 should be better at reducing PSNR than L1
+        # [Param] Funnily enough, previous work shows that L1 often produces higher PSNR. See table 1 https://arxiv.org/pdf/1511.08861.pdf
+        # [Param] What you need is probably a smoothed L1 (see discussion in .md file)
     x_downscaled = imresize(x, scale=0.5)
     loss_guide = ((x_downscaled - y)**2).mean()
 
