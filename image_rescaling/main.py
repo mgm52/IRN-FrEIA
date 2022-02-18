@@ -22,12 +22,12 @@ def rgb_to_y(rgb_imgs):
   output = (rgb_imgs[:,0,:,:] * 65.481 + rgb_imgs[:,1,:,:] * 128.553 + rgb_imgs[:,2,:,:] * 24.966)/255.0 + 16
   return output.unsqueeze(dim=1)
 
-def see_irn_example(x, y, z, x_recon_from_y, see=True, save=True, wandb_log=False, wandb_step=-1, name=0, render_grid=True):
+def see_irn_example(x, y, z, x_recon_from_y, scale, see=True, save=True, wandb_log=False, wandb_step=-1, name=0, render_grid=True):
     print("-> About to visualize irn example")
     i = random.randint(0, len(x)-1)
 
-    x_downscaled_bc = imresize(x[i], scale=0.5)
-    x_upscaled_bc = imresize(x_downscaled_bc, scale=2)
+    x_downscaled_bc = imresize(x[i], scale=1.0/scale)
+    x_upscaled_bc = imresize(x_downscaled_bc, scale=scale)
 
 
     #div2k images are loaded with values in range [0, 1] but mnist8 is in range [0, 16].
@@ -90,21 +90,25 @@ def see_irn_example(x, y, z, x_recon_from_y, see=True, save=True, wandb_log=Fals
 
 def test_inn(inn,
     dataloaders: DataLoaders,
+    scale,
     lambda_recon=1,
     lambda_guide=1,
     lambda_distr=1,
-    calculate_metrics=False
+    calculate_metrics=False,
 ):
     max_test_batches = dataloaders.test_len / dataloaders.test_dataloader.batch_size
     assert(max_test_batches == int(max_test_batches)), f"Test batch size ({dataloaders.test_dataloader.batch_size}) does not fit into test dataset ({dataloaders.test_len})"
 
     # Get losses across test dataset
     test_metrics = []
+    test_iter = iter(dataloaders.test_dataloader)
+    
     for test_batch_no in range(int(max_test_batches)):
         with torch.no_grad():
             # todo: use batch_size=-1 instead, then check that it works
-            x, y, z, x_recon_from_y = sample_inn(inn, next(iter(dataloaders.test_dataloader))[0])
-            loss_recon, loss_guide, loss_distr, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y)
+            x, _ = next(test_iter)
+            x, y, z, x_recon_from_y = sample_inn(inn, x)
+            loss_recon, loss_guide, loss_distr, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale)
 
         if calculate_metrics:
             psnr_metric = torchmetrics.PeakSignalNoiseRatio(data_range=16).cuda()
@@ -150,7 +154,8 @@ def train_inn(inn, dataloaders: DataLoaders,
     epochs_between_samples=5000,
     epochs_between_saves=5000,
     use_amsgrad=False,
-    use_grad_clipping=False
+    grad_clipping=False,
+    scale=2
 ):
     optimizer = torch.optim.Adam(inn.parameters(), lr=learning_rate, amsgrad=use_amsgrad)
 
@@ -167,11 +172,18 @@ def train_inn(inn, dataloaders: DataLoaders,
     all_test_losses = []
     avg_training_loss = target_loss+1
 
+    train_iter = iter(dataloaders.train_dataloader)
     while (max_batches==-1 or batch_no < max_batches) and (target_loss==-1 or target_loss<=avg_training_loss) and (max_epochs==-1 or epoch < max_epochs):
         optimizer.zero_grad()
         
-        x, y, z, x_recon_from_y = sample_inn(inn, next(iter(dataloaders.train_dataloader))[0])
-        loss_recon, loss_guide, loss_distr, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y)
+        try:
+            x, _ = next(train_iter)
+        except StopIteration:
+            train_iter = iter(dataloaders.train_dataloader)
+            x, _ = next(train_iter)
+
+        x, y, z, x_recon_from_y = sample_inn(inn, x)
+        loss_recon, loss_guide, loss_distr, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale)
         
         recent_training_losses.append(float(total_loss))
         
@@ -184,7 +196,7 @@ def train_inn(inn, dataloaders: DataLoaders,
             all_avg_training_losses.append(avg_training_loss)
             print(f"At {batch_no} batches (epoch {epoch}):")
             print(f'loss_recon={loss_recon}, loss_guide={loss_guide}, loss_distr={loss_distr}')
-            print(f'Avg training loss, in last {epochs_between_tests if epoch>0 else 0} epochs: {avg_training_loss}')
+            print(f'Avg training loss, in last {epochs_between_training_log if epoch>0 else 0} epochs: {avg_training_loss}')
             recent_training_losses = []
             wandb.log({"train_loss": avg_training_loss, "epoch": epoch}, step=samples)
             epoch_prev_training_log = epoch
@@ -194,14 +206,14 @@ def train_inn(inn, dataloaders: DataLoaders,
             with torch.no_grad():
                 index_of_sample_image = 4
                 x, y, z, x_recon_from_y = sample_inn(inn, dataloaders.test_dataloader.dataset[index_of_sample_image][0].unsqueeze(dim=0))
-            see_irn_example(x, y, z, x_recon_from_y, see=False, save=False, wandb_log=True, wandb_step=samples, name=all_test_losses[-1] if len(all_test_losses)>0 else "-", render_grid=False)
+            see_irn_example(x, y, z, x_recon_from_y, scale, see=False, save=False, wandb_log=True, wandb_step=samples, name=all_test_losses[-1] if len(all_test_losses)>0 else "-", render_grid=False)
             #for j in range(2):
             #    see_irn_example(x, y, z, x_recon_from_y, see=False, save=False, name=all_test_losses[-1])
             epoch_prev_sample = epoch
         
         if epoch - epoch_prev_save >= epochs_between_saves:
             print(f"We are saving at {batch_no+1} batches, {epoch} epochs...")
-            save_network(inn, f"{round(epoch, 2)}_{round(all_test_losses[-1], 2) if len(all_test_losses)>0 else 0}")
+            save_network(inn, f"{round(epoch, 2)}_{round(all_test_losses[-1], 2) if len(all_test_losses)>0 else '-'}")
             epoch_prev_save = epoch
 
         if epoch - epoch_prev_test >= epochs_between_tests:
@@ -209,15 +221,15 @@ def train_inn(inn, dataloaders: DataLoaders,
             print(f'loss_recon={loss_recon}, loss_guide={loss_guide}, loss_distr={loss_distr}')
             print(f'In test dataset, in last {epochs_between_tests if epoch>0 else 0} epochs:')
 
-            test_loss, test_psnr_rgb, test_psnr_y, test_ssim, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, lambda_recon, lambda_guide, lambda_distr, calculate_metrics=True)
+            test_loss, test_psnr_rgb, test_psnr_y, test_ssim, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, scale, lambda_recon, lambda_guide, lambda_distr, calculate_metrics=True)
             all_test_losses.append(test_loss)
             print("")
     
-            wandb.log({"test_loss": test_loss, "test_psnr": test_psnr_rgb, "test_psnr_y": test_psnr_y, "test_ssim": test_ssim, "test_loss_recon": test_lossr, "test_loss_guide": test_lossg, "test_loss_distr": test_lossd, "epoch": epoch}, step=samples)
+            wandb.log({"test_loss": test_loss, "min_test_loss": min(all_test_losses), "test_psnr": test_psnr_rgb, "test_psnr_y": test_psnr_y, "test_ssim": test_ssim, "test_loss_recon": test_lossr, "test_loss_guide": test_lossg, "test_loss_distr": test_lossd, "epoch": epoch}, step=samples)
             epoch_prev_test = epoch
 
         total_loss.backward()
-        if use_grad_clipping: torch.nn.utils.clip_grad_norm_(inn.parameters(), max_norm=2.0)
+        torch.nn.utils.clip_grad_norm_(inn.parameters(), max_norm=grad_clipping)
         optimizer.step()
         batch_no+=1
     return all_avg_training_losses, all_test_losses
@@ -237,10 +249,10 @@ with wandb.init(
         "lambda_distr": 0.01,
         "initial_learning_rate": 0.001,
         "img_size": 144,
-        "ds_count": 1, # rescaling factor = 2^ds_count
+        "scale": 4, # ds_count = log2(scale)
         "inv_per_ds": 3,
         "seed": 0,
-        "use_grad_clipping": True,
+        "grad_clipping": 2.0,
         #"lr": 1e-3,
         #"dropout": random.uniform(0.01, 0.80)
 }):
@@ -254,11 +266,14 @@ with wandb.init(
     dataloaders = None if use_mnist8 else Div2KDataLoaders(config.batch_size, config.img_size, full_size_test_imgs=True)
 
     # Train the network
-    inn = IRN(3, config.img_size, config.img_size, ds_count=config.ds_count, inv_per_ds=config.inv_per_ds)
+    ds_count = int(np.log2(config.scale))
+    assert(ds_count==np.log2(config.scale)), "Scale must be a power of 2."
+
+    inn = IRN(3, config.img_size, config.img_size, ds_count=ds_count, inv_per_ds=config.inv_per_ds)
     all_training_losses, all_test_losses = train_inn(inn, dataloaders,
                                                     max_batches=-1, max_epochs=-1, target_loss=-1,
                                                     epochs_between_tests=6, epochs_between_training_log=0.5, epochs_between_samples=3, epochs_between_saves=6, 
-                                                    learning_rate=config.initial_learning_rate, use_grad_clipping=config.use_grad_clipping,
+                                                    learning_rate=config.initial_learning_rate, grad_clipping=config.grad_clipping, scale=config.scale,
                                                     lambda_recon=config.lambda_recon, lambda_guide=config.lambda_guide, lambda_distr=config.lambda_distr)
     #plt.savefig(f'output/test_loss_{int(time.time())}_{int(all_test_losses[-1])}', dpi=100)
 
