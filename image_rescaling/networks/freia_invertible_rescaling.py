@@ -36,11 +36,12 @@ def IRN(*dims, ds_count=1, inv_per_ds=1):
             inn.append(EnhancedCouplingOneSidedIRN, subnet_constructor=db_subnet)
     return inn.cuda() if device=="cuda" else inn
 
-def sample_inn(inn, dataloaders:DataLoaders=None, use_test_set=True):
-    x, _ = next(iter(dataloaders.test_dataloader if use_test_set else dataloaders.train_dataloader))
+def sample_inn(inn, x: torch.Tensor, use_test_set=True):
     x = x * 16 # see if moving from 0-1 range to 0-16 range fixes div2k noise
 
-    x = torch.tensor(np.array(x), dtype=torch.float, device=device).reshape(-1, *dataloaders.sample_shape)
+    if device=="cuda": x = x.cuda()
+
+    #x = torch.tensor(np.array(x), dtype=torch.float, device=device).reshape(-1, *dataloaders.sample_shape)
     # TODO: move this multiplication logic into the mnist8 data loader
     if x.shape[1]==1: x = x.repeat(1, 3, 1, 1)
     assert x.shape[1] == 3, f"Expected 3 channels, have {x.shape[1]}"

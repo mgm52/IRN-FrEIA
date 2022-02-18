@@ -20,15 +20,31 @@ class DataLoaders:
         self.test_len = len(self.test_dataloader.dataset)
         self.sample_shape = sample_shape
 
-def Div2KDataLoaders(batch_size, img_size=64, shuffle_training_data=True):
-    transform = transforms.Compose([transforms.CenterCrop(img_size), transforms.ToTensor()])
-    dataset = datasets.ImageFolder("/rds/user/mgm52/hpc-work/invertible-image-rescaling/data/DIV2K/DIV2K_train_LR_x2", transform=transform)
+# NOTE: the paper crops full-sized test images by a border equal to the scaling factor being trained on (e.g. 2x).
+# I suppose this is because it believes the border pixels to be less accurate?
+def Div2KDataLoaders(batch_size, img_size=64, shuffle_training_data=True, full_size_test_imgs=False):
+    #training_data = Div2K(root="./data", scale=4, split="train", track="bicubic", transform=ToTensor(), download=False)
+    #testing_data = Div2K(root="./data", scale=8, split="test", track="bicubic", transform=ToTensor(), download=False)
+
+    transform = transforms.Compose([
+        transforms.RandomCrop(img_size),
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.RandomVerticalFlip(p=0.5),
+        transforms.RandomApply([transforms.RandomRotation((90, 90))], p=0.5),
+        transforms.ToTensor()
+    ])
+    dataset = datasets.ImageFolder("/rds/user/mgm52/hpc-work/invertible-image-rescaling/data/DIV2K/DIV2K_train_HR", transform=transform)
     train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle_training_data)
     print(f"Loaded {len(dataset)} training images")
 
-    transform = transforms.Compose([transforms.CenterCrop(img_size), transforms.ToTensor()])
-    dataset = datasets.ImageFolder("/rds/user/mgm52/hpc-work/invertible-image-rescaling/data/DIV2K/DIV2K_test_LR_x2", transform=transform)
-    test_dataloader = DataLoader(dataset, batch_size=len(dataset), shuffle=False)
+    if full_size_test_imgs:
+        transform = transforms.Compose([transforms.ToTensor()])
+        dataset = datasets.ImageFolder("/rds/user/mgm52/hpc-work/invertible-image-rescaling/data/DIV2K/DIV2K_valid_HR", transform=transform)
+        test_dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
+    else:
+        transform = transforms.Compose([transforms.CenterCrop(img_size), transforms.ToTensor()])
+        dataset = datasets.ImageFolder("/rds/user/mgm52/hpc-work/invertible-image-rescaling/data/DIV2K/DIV2K_valid_HR", transform=transform)
+        test_dataloader = DataLoader(dataset, batch_size=len(dataset), shuffle=False)
     print(f"Loaded {len(dataset)} test images")
 
     return DataLoaders(train_dataloader, test_dataloader, sample_shape=(3, img_size, img_size))    
