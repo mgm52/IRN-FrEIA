@@ -44,6 +44,7 @@
 	- I suppose one advantage is we can visualize the realm of possible upscalings. Paper doesn't explore this very much.
 	- It means we can establish a bijection between x and z, and so by optimizing z we optimize x?
   - *[Param] If z was constant, the mapping can't be bijective since there is a reduction in dimensions. The point of the known latent is to capture stochasticity in a controllable manner.*
+  - **UPDATE** [Max]: [This paper](https://arxiv.org/pdf/2111.05133.pdf) actually did try taking the latent distribution to be z=0, and did find that it achieves similar/better(!) results like I hypothesized. What I meant by "take the latent distribution to be z=0" was "train the network by resampling from z=0 instead of from z~N(0, 1)". The mapping is still bijective, it's just that the z produced by the network approaches 0 as we train.
 
 - Greater iteration on loss parameters - try dropping L_guide, etc.
 	- Worth noting that the inclusion of other parameters slows the speed at which loss_distr is improved.
