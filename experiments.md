@@ -54,6 +54,10 @@
 - Produce graphs of loss vs batch_size, learning_rate, learning_rate adjustment, time, etc.
 	- Preliminary result: batch_size=5 reaches ~~learning_rate~~ loss of 260 twice as batch_size=1 over time on my 3080 GPU
 
+- What does repeated application of the network look like?
+
+- How well does the network perform when given images downscaled by other means (i.e. test IRN on super-resolution tasks)?
+
 ### New functionality
 
 - Optimize for very high resolutions, e.g. on 4k images. The "wavelet flow: fast training of high resolution normalizing flows" paper makes the case that their architecture can work on high res data better. Try to work this into my results and get an improvement on old architecture!
