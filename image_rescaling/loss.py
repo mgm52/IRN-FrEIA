@@ -1,7 +1,7 @@
 import torch
 from bicubic_pytorch.core import imresize
 
-def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y):
+def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale):
     # Purpose of Loss_Reconstruction: accurate upscaling
     loss_recon = torch.abs(x - x_recon_from_y).mean()# + torch.abs(torch.std(x, axis=1) - torch.std(x_recon_from_y, axis=1)).mean()
 
@@ -10,7 +10,7 @@ def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_reco
         # --> for this reason L2 should be better at reducing PSNR than L1
         # [Param] Funnily enough, previous work shows that L1 often produces higher PSNR. See table 1 https://arxiv.org/pdf/1511.08861.pdf
         # [Param] What you need is probably a smoothed L1 (see discussion in .md file)
-    x_downscaled = imresize(x, scale=0.5)
+    x_downscaled = imresize(x, scale=1.0/scale)
     loss_guide = ((x_downscaled - y)**2).mean()
 
     # Purpose of Loss_Distribution_Match_Surrogate:

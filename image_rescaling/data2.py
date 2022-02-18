@@ -1,3 +1,5 @@
+import os
+from typing import Any, Callable, Optional
 import torch
 from torch.utils.data import Dataset
 from torchvision import datasets
@@ -17,6 +19,31 @@ class DataLoaders:
         self.test_len = len(self.test_dataloader.dataset)
         self.sample_shape = sample_shape
 
+# The default datasets.ImageFolder class doesn't allow you to load a single class of images in a folder with multiple classes
+# This fixes that; classname should be the name of the folder within root that you want to load, or None to detect it automatically.
+class SingleClassImageFolder(datasets.ImageFolder):
+    def __init__(self, root, classname = None, transform = None):
+        self.classname = classname
+        super().__init__(root, transform)
+
+    def find_classes(self, directory: str):
+        print(f"Loading a single class file in {directory}...")
+        classes = [entry.name for entry in os.scandir(directory) if entry.is_dir()]
+
+        if not classes:
+            raise FileNotFoundError(f"Couldn't find any class folder in {directory}.")
+
+        if self.classname is None:
+            if len(classes) > 1:
+                raise FileNotFoundError(f"Multiple class folders found in {directory} but no classname was specified.")
+            return classes, {classes[0]: 0}
+
+        if not (self.classname is None):
+            if not (self.classname in classes):
+                raise FileNotFoundError(f"Couldn't find class folder named '{self.classname}' in {directory}.")
+            return [self.classname], {self.classname: 0}
+
+
 # NOTE: the paper crops full-sized test images by a border equal to the scaling factor being trained on (e.g. 2x).
 # I suppose this is because it believes the border pixels to be less accurate?
 def Div2KDataLoaders(batch_size, img_size=64, shuffle_training_data=True, full_size_test_imgs=False):
@@ -30,17 +57,17 @@ def Div2KDataLoaders(batch_size, img_size=64, shuffle_training_data=True, full_s
         transforms.RandomApply([transforms.RandomRotation((90, 90))], p=0.5),
         transforms.ToTensor()
     ])
-    dataset = datasets.ImageFolder("./data/DIV2K/DIV2K_train_HR", transform=transform)
+    dataset = SingleClassImageFolder("./data/DIV2K/DIV2K_train_HR", transform=transform)
     train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle_training_data)
     print(f"Loaded {len(dataset)} training images")
 
     if full_size_test_imgs:
         transform = transforms.Compose([transforms.ToTensor()])
-        dataset = datasets.ImageFolder("./data/DIV2K/DIV2K_valid_HR", transform=transform)
+        dataset = SingleClassImageFolder("./data/DIV2K/DIV2K_valid_HR", transform=transform)
         test_dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
     else:
         transform = transforms.Compose([transforms.CenterCrop(img_size), transforms.ToTensor()])
-        dataset = datasets.ImageFolder("./data/DIV2K/DIV2K_valid_HR", transform=transform)
+        dataset = SingleClassImageFolder("./data/DIV2K/DIV2K_valid_HR", transform=transform)
         test_dataloader = DataLoader(dataset, batch_size=len(dataset), shuffle=False)
     print(f"Loaded {len(dataset)} test images")
 
