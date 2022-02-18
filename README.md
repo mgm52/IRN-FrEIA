@@ -5,14 +5,27 @@ This is a reimplementation of [Invertible Image Rescaling](https://github.com/pk
 *Example results on DIV2K test set after 200 epochs (4 hours training time on an Tesla P100 GPU):*
 ![Example output!](/output/5e7d329f-7605-4491-82c5-b5f8ac1899aa.png "Example output")
 ## Links
-PAPERS
-- Analyzing Inverse Problems With Invertible Neural Networks https://arxiv.org/pdf/1808.04730.pdf
+CORE PAPER
 - Invertible image rescaling https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460120.pdf
 - Invertible image rescaling w/ appendix https://arxiv.org/pdf/2005.05650.pdf
+  - DIV2K 4x PSNR/SSIM: 35.07/?, 4.4M params
+
+BACKGROUND PAPERS
+- Analyzing Inverse Problems With Invertible Neural Networks https://arxiv.org/pdf/1808.04730.pdf
 - NICE (explains normalizing flow & proposes a good coupling layer) https://arxiv.org/pdf/1410.8516.pdf
 - Task-aware image downscaling (maybe relevant) https://openaccess.thecvf.com/content_ECCV_2018/papers/Heewon_Kim_Task-Aware_Image_Downscaling_ECCV_2018_paper.pdf
 - Lossy Image Compression with Normalizing Flows - closely related paper https://studios.disneyresearch.com/app/uploads/2021/05/Lossy-Image-Compression-with-Normalizing-Flows.pdf
 - Various IQA methods including DISTS https://github.com/dingkeyan93/IQA-optimization
+
+COMPETING PAPERS
+- HCFlow: Hierarchical conditional flow: a unified framework for image super-resolution and image rescaling https://arxiv.org/pdf/2108.05301.pdf
+  - DIV2K 4x PSNR/SSIM: 35.23/0.9346, 4.4M params
+- FGRN: Approaching the Limit of Image Rescaling via Flow Guidance https://arxiv.org/pdf/2111.05133.pdf
+  - Uses two non-invertible networks for `compressed<->upscaled`, one invertible network for `compressed<->downscaled`. I am slightly dubious as to how useful that really is.
+  - DIV2K 4x PSNR/SSIM: 35.15/0.9322, 3.35M params
+- AIDN: Scale-arbitrary Invertible Image Downscaling https://arxiv.org/pdf/2201.12576.pdf
+  - Outperforms IRN on not-power-of-two image rescaling
+  - DIV2K 4x PSNR/SSIM: 34.94/?, 3.8M params
 
 DISS
 - Dissertation structure explanation https://www.cst.cam.ac.uk/teaching/part-ii/projects/dissertation
