@@ -8,7 +8,7 @@ This is a reimplementation of [Invertible Image Rescaling](https://github.com/pk
 CORE PAPER
 - Invertible image rescaling https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460120.pdf
 - Invertible image rescaling w/ appendix https://arxiv.org/pdf/2005.05650.pdf
-  - DIV2K 4x PSNR/SSIM: 35.07/?, 4.4M params
+  - DIV2K 4x PSNR/SSIM: 35.07/0.9318, 4.4M params
 
 BACKGROUND PAPERS
 - Analyzing Inverse Problems With Invertible Neural Networks https://arxiv.org/pdf/1808.04730.pdf
