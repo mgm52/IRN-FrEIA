@@ -51,9 +51,8 @@
 
 - I should show how the downscaled image changes as loss_guide decreases. Might be able to comment on what kind of tricks it uses to compress data.
 
-- Produce graphs of loss vs batch_size, learning_rate, learning_rate adjustment, etc.
-	- Preliminary result: batch_size=5 reaches learning_rate of 260 twice as fast as batch_size=1 on my 3080
-  - *[Param] Not sure what it means to "reach a learning_rate".*
+- Produce graphs of loss vs batch_size, learning_rate, learning_rate adjustment, time, etc.
+	- Preliminary result: batch_size=5 reaches ~~learning_rate~~ loss of 260 twice as batch_size=1 over time on my 3080 GPU
 
 ### New functionality
 
