@@ -187,6 +187,7 @@ def train_inn(inn, dataloaders: DataLoaders,
             print(f'Avg training loss, in last {epochs_between_tests if epoch>0 else 0} epochs: {avg_training_loss}')
             recent_training_losses = []
             wandb.log({"train_loss": avg_training_loss, "epoch": epoch}, step=samples)
+            epoch_prev_training_log = epoch
 
         if epoch - epoch_prev_sample >= epochs_between_samples:
             print(f"We are sampling at {batch_no+1} batches, {epoch} epochs...")
@@ -201,6 +202,7 @@ def train_inn(inn, dataloaders: DataLoaders,
         if epoch - epoch_prev_save >= epochs_between_saves:
             print(f"We are saving at {batch_no+1} batches, {epoch} epochs...")
             save_network(inn, f"{round(epoch, 2)}_{round(all_test_losses[-1], 2)}")
+            epoch_prev_save = epoch
 
         if epoch - epoch_prev_test >= epochs_between_tests:
             print(f"At {batch_no} batches (epoch {epoch}):")
@@ -210,9 +212,9 @@ def train_inn(inn, dataloaders: DataLoaders,
             test_loss, test_psnr_rgb, test_psnr_y, test_ssim, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, lambda_recon, lambda_guide, lambda_distr, calculate_metrics=True)
             all_test_losses.append(test_loss)
             print("")
-            epoch_prev_test = epoch
     
             wandb.log({"test_loss": test_loss, "test_psnr": test_psnr_rgb, "test_psnr_y": test_psnr_y, "test_ssim": test_ssim, "test_loss_recon": test_lossr, "test_loss_guide": test_lossg, "test_loss_distr": test_lossd, "epoch": epoch}, step=samples)
+            epoch_prev_test = epoch
 
         total_loss.backward()
         if use_grad_clipping: torch.nn.utils.clip_grad_norm_(inn.parameters(), max_norm=2.0)
