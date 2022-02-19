@@ -31,6 +31,10 @@ COMPETING PAPERS
   - Outperforms IRN on not-power-of-two image rescaling
   - DIV2K 4x PSNR/SSIM: 34.94/?, 3.8M params
 
+WORKSHOPS
+- CLIC (March 23, 4 pages inc references) http://compression.cc/cfp/
+- Others to be announced March/April
+
 DISS
 - Dissertation structure explanation https://www.cst.cam.ac.uk/teaching/part-ii/projects/dissertation
 - Assessment criteria https://www.cst.cam.ac.uk/teaching/part-ii/projects/assessment
