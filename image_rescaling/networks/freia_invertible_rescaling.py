@@ -27,17 +27,20 @@ np.set_printoptions(linewidth=200)
 # dims          is in (c, w, h) format
 # inn x         is in [(n, c, w, h), (n, c, w, h), ...] format
 # inn output    is in [(n, c, w, h), (n, c, w, h), ...] format
-def IRN(*dims, ds_count=1, inv_per_ds=1):
+def IRN(*dims, ds_count=1, inv_per_ds=1, inv_final_level_extra=0, inv_first_level_extra=0):
     # SequenceINN takes dims in (c, w, h) format
     inn = ff.SequenceINN(*dims)
     for d in range(ds_count):
         inn.append(HaarDownsampling, order_by_wavelet=True)
-        for i in range(0, inv_per_ds):
+        inv_count = inv_per_ds
+        if d==0: inv_count += inv_first_level_extra
+        elif d==ds_count-1: inv_count += inv_final_level_extra
+        for i in range(inv_count):
             inn.append(EnhancedCouplingOneSidedIRN, subnet_constructor=db_subnet)
     return inn.cuda() if device=="cuda" else inn
 
 def sample_inn(inn, x: torch.Tensor, use_test_set=True):
-    x = x * 16 # see if moving from 0-1 range to 0-16 range fixes div2k noise
+    x = x * 1 # previously used to see if moving from 0-1 range to 0-16 range fixes div2k noise
 
     if device=="cuda": x = x.cuda()
 
