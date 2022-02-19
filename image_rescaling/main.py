@@ -164,10 +164,13 @@ def train_inn(inn, dataloaders: DataLoaders,
     epochs_between_samples=5000,
     epochs_between_saves=5000,
     use_amsgrad=False,
-    grad_clipping=False,
-    scale=2
+    grad_clipping=10.0,
+    scale=2,
+    lr_batch_milestones=[100000, 200000, 300000, 400000],
+    lr_gamma=0.5
 ):
     optimizer = torch.optim.Adam(inn.parameters(), lr=learning_rate, weight_decay=0.00001, amsgrad=use_amsgrad)
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=lr_batch_milestones, gamma=lr_gamma)
 
     batch_no = 0
     epoch = 0
@@ -197,7 +200,6 @@ def train_inn(inn, dataloaders: DataLoaders,
         loss_recon, loss_guide, loss_distr, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale)
         
         recent_training_losses.append(float(total_loss))
-        
 
         samples = batch_no * dataloaders.train_dataloader.batch_size
         epoch = float(samples / dataloaders.train_len)
@@ -244,6 +246,7 @@ def train_inn(inn, dataloaders: DataLoaders,
         total_loss.backward()
         torch.nn.utils.clip_grad_norm_(inn.parameters(), max_norm=grad_clipping)
         optimizer.step()
+        scheduler.step()
         batch_no+=1
     return all_avg_training_losses, all_test_losses
 
@@ -267,7 +270,9 @@ with wandb.init(
         "inv_final_level_extra": 3,
         "seed": 0,
         "grad_clipping": 2,
-        "full_size_test_imgs": True
+        "full_size_test_imgs": True,
+        "lr_batch_milestones": [100000, 200000, 300000, 400000],
+        "lr_gamma": 0.5
 }):
     config = wandb.config
 
@@ -287,6 +292,7 @@ with wandb.init(
                                                     max_batches=-1, max_epochs=-1, target_loss=-1,
                                                     epochs_between_tests=6, epochs_between_training_log=0.05, epochs_between_samples=0.25, epochs_between_saves=6, 
                                                     learning_rate=config.initial_learning_rate, grad_clipping=config.grad_clipping, scale=config.scale,
-                                                    lambda_recon=config.lambda_recon, lambda_guide=config.lambda_guide, lambda_distr=config.lambda_distr)
+                                                    lambda_recon=config.lambda_recon, lambda_guide=config.lambda_guide, lambda_distr=config.lambda_distr,
+                                                    lr_batch_milestones=config.lr_batch_milestones, lr_gamma=config.lr_gamma)
     #plt.savefig(f'output/test_loss_{int(time.time())}_{int(all_test_losses[-1])}', dpi=100)
 
