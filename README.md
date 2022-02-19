@@ -54,10 +54,18 @@ OTHER
 ### Immediate next steps
 
 ~~- Output test metrics: PSNR and FID, and log-likelihood for mnist generation~~
-- ~~Train on higher resolutions ~~making use of pytorch DataLoader~~
+- ~~Train on higher resolutions making use of pytorch DataLoader~~
 - ~~Investigate why using ActNorm makes my pytorch implementation deviate more from FrEIA, and why FrEIA doesn't seem to quite use actnorm in allinone (?) (<-- solved, it's because parameters weren't being trained)~~
 - Investigate GPU server performance issues and train for a longer period of time
+  - Run the author's code on own GPU to compare performance
+  - Log time spent doing different activities (data loading, forward pass, backward pass) to look for bottlenecks
+  - I'm surprised to still see some gradient explosion using the author's parameters. Track gradient explosion more carefully by logging samples that lead to explosion?
+  - Look into getting Wilkes3 access if I determine the P100 isn't fast enough to train 500k batches (10K epochs) in 1 week
+  - Train for more than 12 hours by reloading model over multiple jobs
 - Clean up and comment on code
+  - Better folder organisation
+  - Potentially more generalisable functions
+- Test on other datasets (SET5, etc)
 - Write tests
 - Consider organising code into access, assess, address format (neil's "fynesse" template)
 
