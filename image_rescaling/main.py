@@ -211,7 +211,7 @@ def train_inn(inn, dataloaders: DataLoaders,
             print(f'loss_recon={loss_recon}, loss_guide={loss_guide}, loss_distr={loss_distr}')
             print(f'Avg training loss, in last {epochs_between_training_log if epoch>0 else 0} epochs: {avg_training_loss}')
             recent_training_losses = []
-            wandb.log({"train_loss": avg_training_loss, "epoch": epoch}, step=samples)
+            wandb.log({"train_loss": avg_training_loss, "epoch": epoch}, step=batch_no)
             epoch_prev_training_log = epoch
 
         if epoch - epoch_prev_sample >= epochs_between_samples:
@@ -219,7 +219,7 @@ def train_inn(inn, dataloaders: DataLoaders,
             with torch.no_grad():
                 index_of_sample_image = 4
                 x, y, z, x_recon_from_y = sample_inn(inn, dataloaders.test_dataloader.dataset[index_of_sample_image][0].unsqueeze(dim=0))
-            see_irn_example(x, y, z, x_recon_from_y, scale, see=False, save=True, wandb_log=True, wandb_step=samples, name=all_test_losses[-1] if len(all_test_losses)>0 else "-", render_grid=False)
+            see_irn_example(x, y, z, x_recon_from_y, scale, see=False, save=True, wandb_log=True, wandb_step=batch_no, name=all_test_losses[-1] if len(all_test_losses)>0 else "-", render_grid=False)
             #for j in range(2):
             #    see_irn_example(x, y, z, x_recon_from_y, see=False, save=False, name=all_test_losses[-1])
             epoch_prev_sample = epoch
@@ -240,7 +240,7 @@ def train_inn(inn, dataloaders: DataLoaders,
             all_test_psnr_y.append(test_psnr_y)
             print("")
     
-            wandb.log({"test_loss": test_loss, "min_test_loss": min(all_test_losses), "max_test_psnr_y": max(all_test_psnr_y), "test_psnr": test_psnr_rgb, "test_psnr_y": test_psnr_y, "test_ssim": test_ssim, "test_loss_recon": test_lossr, "test_loss_guide": test_lossg, "test_loss_distr": test_lossd, "epoch": epoch}, step=samples)
+            wandb.log({"test_loss": test_loss, "min_test_loss": min(all_test_losses), "max_test_psnr_y": max(all_test_psnr_y), "test_psnr": test_psnr_rgb, "test_psnr_y": test_psnr_y, "test_ssim": test_ssim, "test_loss_recon": test_lossr, "test_loss_guide": test_lossg, "test_loss_distr": test_lossd, "epoch": epoch}, step=batch_no)
             epoch_prev_test = epoch
 
         total_loss.backward()
