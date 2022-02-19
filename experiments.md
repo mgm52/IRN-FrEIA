@@ -44,15 +44,19 @@
 	- I suppose one advantage is we can visualize the realm of possible upscalings. Paper doesn't explore this very much.
 	- It means we can establish a bijection between x and z, and so by optimizing z we optimize x?
   - *[Param] If z was constant, the mapping can't be bijective since there is a reduction in dimensions. The point of the known latent is to capture stochasticity in a controllable manner.*
+  - **UPDATE** [Max]: [This paper (section 4.5)](https://arxiv.org/pdf/2111.05133.pdf) actually did try taking the latent distribution to be z=0, and did find that it achieves similar/better(!) results like I hypothesized. What I meant by "take the latent distribution to be z=0" was "train the network by resampling from z=0 instead of from z~N(0, 1)". The mapping is still bijective, it's just that the z produced by the network approaches 0 as we train.
 
 - Greater iteration on loss parameters - try dropping L_guide, etc.
 	- Worth noting that the inclusion of other parameters slows the speed at which loss_distr is improved.
 
 - I should show how the downscaled image changes as loss_guide decreases. Might be able to comment on what kind of tricks it uses to compress data.
 
-- Produce graphs of loss vs batch_size, learning_rate, learning_rate adjustment, etc.
-	- Preliminary result: batch_size=5 reaches learning_rate of 260 twice as fast as batch_size=1 on my 3080
-  - *[Param] Not sure what it means to "reach a learning_rate".*
+- Produce graphs of loss vs batch_size, learning_rate, learning_rate adjustment, time, etc.
+	- Preliminary result: batch_size=5 reaches ~~learning_rate~~ loss of 260 twice as batch_size=1 over time on my 3080 GPU
+
+- What does repeated application of the network look like?
+
+- How well does the network perform when given images downscaled by other means (i.e. test IRN on super-resolution tasks)?
 
 ### New functionality
 
@@ -60,6 +64,7 @@
 
 - Could I remove loss_guide to turn this into a compression technique?
 	- Probably yes, but it might not be very useful given that compression has been attempted before by networks not limited by compressing to an image
+	- Update: this was addressed [in a follow-up paper](https://arxiv.org/pdf/2006.11999.pdf) by the authors of IRN! They use an invertible network they call ILC. Uses Haar downsampling again, and its coupling layers are affine-affine rather than additive-affine. I should read into this.
 
 - Could I remove loss_guide and use non-enhanced affine coupling to turn this into a general upscaling technique?
 	- (context: I think loss_guide is only necessary with enhanced coupling, not affine coupling. Affine coupling doesnt change x1, but enhanced does.)
@@ -88,3 +93,4 @@
 	- We would need some mechanism to ensure temporal stability across frames.
 		- Simplest way: replace our loss function with a GAN that discriminates between GT pairs of frames and irn-upscaled pairs, as well as between bicubic-downscaled pairs and irn-downscaled pairs. In fact, we may be able to get away without even changing the model architecture at all: just expect it to learn to up/downscale in a more stable manner given the loss function.
 		- More creative way: instead of comparing two frames using a GAN, take any image and synthesize a "next frame" by adding random noise, translation, rescaling, rotation, etc. For our loss function, check that `irn_downupscaled(gt_img)->irn_downupscaled(distort(gt_img))` is the same transformation as `gt_img->distort(gt_img)`. In other words, check that `irn_downupscaled(distort(gt_img)) == distort(irn_downupscaled(gt_img))`. To make it more accurate-to-life I could perhaps replace `distort()` with an optical-flow based motion prediction from real frames or some such.
+			- Update: it turns out this idea has ben explored by Rafal Mantiuk! This 2019 paper describes a couple of different transformations similar to what I described... https://arxiv.org/pdf/1902.10424.pdf
