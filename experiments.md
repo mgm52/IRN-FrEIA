@@ -58,6 +58,12 @@
 
 - How well does the network perform when given images downscaled by other means (i.e. test IRN on super-resolution tasks)?
 
+- Can I perform some sort of analysis on which nodes or weights are most useful within the network? 
+	- I expect there are some established methods of doing this.
+	- Idea: report histogram of weight values, histogram of sum of weight values leaving each node.
+	- Idea: test network's performance after cutting out quantities of low-use nodes.
+	- Would be helpful to also perform this analysis on a rival network architecture. Perhaps I could find a model on which some analysis like this has been done already.
+
 ### New functionality
 
 - Optimize for very high resolutions, e.g. on 4k images. The "wavelet flow: fast training of high resolution normalizing flows" paper makes the case that their architecture can work on high res data better. Try to work this into my results and get an improvement on old architecture!
