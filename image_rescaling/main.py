@@ -9,6 +9,9 @@ from torchvision.utils import save_image
 import torchmetrics
 import numpy as np
 import wandb
+import math
+import glob
+import os
 import random
 from loss import calculate_irn_loss
 import matplotlib.pyplot as plt
@@ -21,6 +24,11 @@ def rgb_to_y(rgb_imgs):
   rgb_imgs *= 255
   output = (rgb_imgs[:,0,:,:] * 65.481 + rgb_imgs[:,1,:,:] * 128.553 + rgb_imgs[:,2,:,:] * 24.966)/255.0 + 1
   return output.unsqueeze(dim=1)
+
+def latest_file_in_folder(folder_path):
+    # Can target specific file extensions by replacing * with e.g. *.pth
+    latest_file_path = max(glob.glob(f"{folder_path}/*"), key=os.path.getctime)
+    return latest_file_path
 
 def see_irn_example(x, y, z, x_recon_from_y, scale, see=True, save=True, wandb_log=False, wandb_step=-1, name=0, render_grid=True):
     print("-> About to visualize irn example")
@@ -142,7 +150,7 @@ def test_inn(inn,
     return total_loss, psnr_RGB, psnr_Y, ssim, loss_recon, loss_guide, loss_distr
 
 def save_network(inn, optimizer, epoch, loss, name):
-    save_filename = f"/rds/user/mgm52/hpc-work/invertible-image-rescaling/saved_models/model_{int(time.time())}_{name}.pth"
+    save_filename = f"saved_models/model_{int(time.time())}_{name}.pth"
 
     torch.save({
         "epoch": epoch,
@@ -150,6 +158,15 @@ def save_network(inn, optimizer, epoch, loss, name):
         "model_state_dict": inn.state_dict(),
         "optimizer_state_dict": optimizer.state_dict()
     }, save_filename)
+
+def load_network(inn, optimizer, path):
+    load_filename = path
+
+    checkpoint = torch.load(path)
+    inn.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+    return inn, optimizer, checkpoint["epoch"], checkpoint["loss"]
 
 def train_inn(inn, dataloaders: DataLoaders,
     max_batches=10000,
@@ -167,24 +184,36 @@ def train_inn(inn, dataloaders: DataLoaders,
     grad_clipping=10.0,
     scale=2,
     lr_batch_milestones=[100000, 200000, 300000, 400000],
-    lr_gamma=0.5
+    lr_gamma=0.5,
+    load_checkpoint_path=""
 ):
     optimizer = torch.optim.Adam(inn.parameters(), lr=learning_rate, weight_decay=0.00001, amsgrad=use_amsgrad)
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=lr_batch_milestones, gamma=lr_gamma)
+    
+    if(load_checkpoint_path):
+        inn, optimizer, epoch, avg_training_loss = load_network(inn, optimizer, load_checkpoint_path)
+        batch_no = math.floor(epoch * dataloaders.train_dataloader.batch_size)
 
-    batch_no = 0
-    epoch = 0
-    epoch_prev_test = -1
-    epoch_prev_training_log = -1
-    epoch_prev_sample = -1
-    epoch_prev_save = -1
+        recent_training_losses = [avg_training_loss]
+        all_avg_training_losses = [avg_training_loss]
 
-    # TODO: improve logic
-    recent_training_losses = []
-    all_avg_training_losses = []
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=lr_batch_milestones, gamma=lr_gamma, last_epoch=batch_no)
+    else:
+        epoch = 0
+        batch_no = 0
+
+        recent_training_losses = []
+        all_avg_training_losses = []
+        avg_training_loss = target_loss+1
+
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=lr_batch_milestones, gamma=lr_gamma)
+
+    epoch_prev_test = epoch-1
+    epoch_prev_training_log = epoch-1
+    epoch_prev_sample = epoch-1
+    epoch_prev_save = epoch-1
+
     all_test_losses = []
     all_test_psnr_y = []
-    avg_training_loss = target_loss+1
 
     train_iter = iter(dataloaders.train_dataloader)
     while (max_batches==-1 or batch_no < max_batches) and (target_loss==-1 or target_loss<=avg_training_loss) and (max_epochs==-1 or epoch < max_epochs):
@@ -250,49 +279,62 @@ def train_inn(inn, dataloaders: DataLoaders,
         batch_no+=1
     return all_avg_training_losses, all_test_losses
 
-use_mnist8 = False
+
+
+####    EXECUTION CODE    ####
+
+resume_latest_run = False
 
 wandb.login()
-
-
-with wandb.init(
+run = wandb.init(
     project="invertible-rescaling-network",
+    dir="/rds/user/mgm52/hpc-work/invertible-image-rescaling",
+    resume=resume_latest_run,
     config={
-        "batch_size": 5,
-        "lambda_recon": 100,
-        "lambda_guide": 20,
-        "lambda_distr": 0.01,
-        "initial_learning_rate": 0.0005,
+        "batch_size": 16,
+        "lambda_recon": 1,
+        "lambda_guide": 16,
+        "lambda_distr": 1,
+        "initial_learning_rate": 0.0004,
         "img_size": 144,
-        "scale": 16, # ds_count = log2(scale)
-        "inv_per_ds": 0,
-        "inv_first_level_extra": 3,
-        "inv_final_level_extra": 3,
-        "seed": 0,
-        "grad_clipping": 2,
+        "scale": 4, # ds_count = log2(scale)
+        "inv_per_ds": 8,
+        "inv_first_level_extra": 0,
+        "inv_final_level_extra": 0,
+        "seed": 10,
+        "grad_clipping": 0.1,
         "full_size_test_imgs": True,
         "lr_batch_milestones": [100000, 200000, 300000, 400000],
         "lr_gamma": 0.5
-}):
-    config = wandb.config
+})
+config = wandb.config
 
-    torch.manual_seed(config.seed)
-    random.seed(config.seed)
-    np.random.seed(config.seed)
+torch.manual_seed(config.seed)
+random.seed(config.seed)
+np.random.seed(config.seed)
 
-    # Load the data
-    dataloaders = None if use_mnist8 else Div2KDataLoaders(config.batch_size, config.img_size, full_size_test_imgs=config.full_size_test_imgs, test_img_size_divisor=config.scale)
+# Load the data
+dataloaders = Div2KDataLoaders(config.batch_size, config.img_size, full_size_test_imgs=config.full_size_test_imgs, test_img_size_divisor=config.scale)
 
-    # Train the network
-    ds_count = int(np.log2(config.scale))
-    assert(ds_count==np.log2(config.scale)), "Scale must be a power of 2."
+# Load the network
+ds_count = int(np.log2(config.scale))
+assert(ds_count==np.log2(config.scale)), "Scale must be a power of 2."
+inn = IRN(3, config.img_size, config.img_size, ds_count=ds_count, inv_per_ds=config.inv_per_ds, inv_final_level_extra=config.inv_final_level_extra, inv_first_level_extra=config.inv_first_level_extra)
 
-    inn = IRN(3, config.img_size, config.img_size, ds_count=ds_count, inv_per_ds=config.inv_per_ds, inv_final_level_extra=config.inv_final_level_extra, inv_first_level_extra=config.inv_first_level_extra)
-    all_training_losses, all_test_losses = train_inn(inn, dataloaders,
-                                                    max_batches=-1, max_epochs=-1, target_loss=-1,
-                                                    epochs_between_tests=6, epochs_between_training_log=0.05, epochs_between_samples=0.25, epochs_between_saves=6, 
-                                                    learning_rate=config.initial_learning_rate, grad_clipping=config.grad_clipping, scale=config.scale,
-                                                    lambda_recon=config.lambda_recon, lambda_guide=config.lambda_guide, lambda_distr=config.lambda_distr,
-                                                    lr_batch_milestones=config.lr_batch_milestones, lr_gamma=config.lr_gamma)
-    #plt.savefig(f'output/test_loss_{int(time.time())}_{int(all_test_losses[-1])}', dpi=100)
+if resume_latest_run:
+    load_checkpoint_path = latest_file_in_folder("./saved_models")
+else:
+    load_checkpoint_path = ""
 
+# Train the network
+# TODO: replace all these parameters with a "config" param...
+all_training_losses, all_test_losses = train_inn(inn, dataloaders,
+                                                max_batches=-1, max_epochs=-1, target_loss=-1,
+                                                epochs_between_tests=6, epochs_between_training_log=0.05, epochs_between_samples=0.25, epochs_between_saves=6, 
+                                                learning_rate=config.initial_learning_rate, grad_clipping=config.grad_clipping, scale=config.scale,
+                                                lambda_recon=config.lambda_recon, lambda_guide=config.lambda_guide, lambda_distr=config.lambda_distr,
+                                                lr_batch_milestones=config.lr_batch_milestones, lr_gamma=config.lr_gamma,
+                                                load_checkpoint_path=load_checkpoint_path)
+#plt.savefig(f'output/test_loss_{int(time.time())}_{int(all_test_losses[-1])}', dpi=100)
+
+run.finish()
