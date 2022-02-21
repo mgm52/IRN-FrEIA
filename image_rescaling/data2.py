@@ -98,17 +98,17 @@ def Div2KDataLoaders(batch_size, img_size=64, shuffle_training_data=True, full_s
         transforms.ToTensor()
     ])
     dataset = SingleClassImageFolder("./data/DIV2K/DIV2K_train_HR", transform=transform)
-    train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle_training_data)
+    train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle_training_data, num_workers=6)
     print(f"Loaded {len(dataset)} training images")
 
     if full_size_test_imgs:
         transform = transforms.Compose([DivisibleCrop(test_img_size_divisor), transforms.ToTensor()])
         dataset = SingleClassImageFolder("./data/DIV2K/DIV2K_valid_HR", transform=transform)
-        test_dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
+        test_dataloader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=6)
     else:
         transform = transforms.Compose([transforms.CenterCrop(img_size), transforms.ToTensor()])
         dataset = SingleClassImageFolder("./data/DIV2K/DIV2K_valid_HR", transform=transform)
-        test_dataloader = DataLoader(dataset, batch_size=len(dataset), shuffle=False)
+        test_dataloader = DataLoader(dataset, batch_size=len(dataset), shuffle=False, num_workers=6)
     print(f"Loaded {len(dataset)} test images")
 
     return DataLoaders(train_dataloader, test_dataloader, sample_shape=(3, img_size, img_size))    

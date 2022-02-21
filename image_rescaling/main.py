@@ -1,5 +1,6 @@
 # Train a given model
 import time
+from tracemalloc import start
 from networks.freia_invertible_rescaling import IRN, sample_inn
 from data import mnist8_iterator, process_xbit_img, see_multiple_imgs, process_div2k_img
 from data2 import Div2KDataLoaders, DataLoaders
@@ -10,6 +11,7 @@ import torchmetrics
 import numpy as np
 import wandb
 import math
+from timeit import default_timer as timer
 import glob
 import os
 import random
@@ -25,9 +27,9 @@ def rgb_to_y(rgb_imgs):
   output = (rgb_imgs[:,0,:,:] * 65.481 + rgb_imgs[:,1,:,:] * 128.553 + rgb_imgs[:,2,:,:] * 24.966)/255.0 + 1
   return output.unsqueeze(dim=1)
 
-def latest_file_in_folder(folder_path):
+def latest_file_in_folder(folder_path, file_ending=""):
     # Can target specific file extensions by replacing * with e.g. *.pth
-    latest_file_path = max(glob.glob(f"{folder_path}/*"), key=os.path.getctime)
+    latest_file_path = max(glob.glob(f"{folder_path}/*{file_ending}"), key=os.path.getctime)
     return latest_file_path
 
 def see_irn_example(x, y, z, x_recon_from_y, scale, see=True, save=True, wandb_log=False, wandb_step=-1, name=0, render_grid=True):
@@ -162,6 +164,8 @@ def save_network(inn, optimizer, epoch, loss, name):
 def load_network(inn, optimizer, path):
     load_filename = path
 
+    print(f"Loading {path}")
+
     checkpoint = torch.load(path)
     inn.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
@@ -185,13 +189,14 @@ def train_inn(inn, dataloaders: DataLoaders,
     scale=2,
     lr_batch_milestones=[100000, 200000, 300000, 400000],
     lr_gamma=0.5,
-    load_checkpoint_path=""
+    load_checkpoint_path="",
+    run_name=""
 ):
     optimizer = torch.optim.Adam(inn.parameters(), lr=learning_rate, weight_decay=0.00001, amsgrad=use_amsgrad)
     
     if(load_checkpoint_path):
         inn, optimizer, epoch, avg_training_loss = load_network(inn, optimizer, load_checkpoint_path)
-        batch_no = math.floor(epoch * dataloaders.train_dataloader.batch_size)
+        batch_no = math.floor(epoch * dataloaders.train_len / dataloaders.train_dataloader.batch_size)
 
         recent_training_losses = [avg_training_loss]
         all_avg_training_losses = [avg_training_loss]
@@ -216,29 +221,70 @@ def train_inn(inn, dataloaders: DataLoaders,
     all_test_psnr_y = []
 
     train_iter = iter(dataloaders.train_dataloader)
+
+    start_ep = timer()
+    time_forward = 0
+    time_loss = 0
+    time_dataloading = 0
+    time_backward = 0
+    time_testing_saving_sampling = 0
+
     while (max_batches==-1 or batch_no < max_batches) and (target_loss==-1 or target_loss<=avg_training_loss) and (max_epochs==-1 or epoch < max_epochs):
         optimizer.zero_grad()
         
+        start = timer()
         try:
             x, _ = next(train_iter)
         except StopIteration:
+            stop_ep = timer()
+            epoch_time = stop_ep - start_ep
+            start_ep = stop_ep
+
+            print("---")
+            print(f"TOTAL EPOCH TIME: {round(epoch_time, 2)}s")
+            print(f"TOTAL FORWARD TIME: {round(time_forward, 2)}s")
+            print(f"TOTAL LOSS TIME: {round(time_loss, 2)}s")
+            print(f"TOTAL DATALOADING TIME: {round(time_dataloading, 2)}s")
+            print(f"TOTAL BACKWARD TIME: {round(time_backward, 2)}s")
+            print(f"TOTAL time_testing_saving_sampling TIME: {round(time_testing_saving_sampling, 2)}s")
+            print(f"(UNACCOUNTED FOR TIME): {round((epoch_time) - (time_forward + time_loss + time_dataloading + time_backward + time_testing_saving_sampling), 2)}s")
+            print("---")
+            wandb.log({"epoch_time_s": epoch_time, "epoch": epoch}, step=batch_no)
+
+            time_forward = 0
+            time_loss = 0
+            time_dataloading = 0
+            time_backward = 0
+            time_testing_saving_sampling = 0
+
             train_iter = iter(dataloaders.train_dataloader)
             x, _ = next(train_iter)
 
+        stop = timer()
+        time_dataloading += stop-start
+
+        start = timer()
         x, y, z, x_recon_from_y = sample_inn(inn, x)
+        stop = timer()
+        time_forward += stop - start
+
+        start = timer()
         loss_recon, loss_guide, loss_distr, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale)
-        
+        stop = timer()
+        time_loss += stop - start
+
         recent_training_losses.append(float(total_loss))
 
         samples = batch_no * dataloaders.train_dataloader.batch_size
         epoch = float(samples / dataloaders.train_len)
 
+        start = timer()
         if epoch - epoch_prev_training_log >= epochs_between_training_log:
             avg_training_loss = sum(recent_training_losses) / len(recent_training_losses)
             all_avg_training_losses.append(avg_training_loss)
             print(f"At {batch_no} batches (epoch {epoch}):")
-            print(f'loss_recon={loss_recon}, loss_guide={loss_guide}, loss_distr={loss_distr}')
-            print(f'Avg training loss, in last {epochs_between_training_log if epoch>0 else 0} epochs: {avg_training_loss}')
+            #print(f'loss_recon={loss_recon}, loss_guide={loss_guide}, loss_distr={loss_distr}')
+            #print(f'Avg training loss, in last {epochs_between_training_log if epoch>0 else 0} epochs: {avg_training_loss}')
             recent_training_losses = []
             wandb.log({"train_loss": avg_training_loss, "epoch": epoch}, step=batch_no)
             epoch_prev_training_log = epoch
@@ -255,7 +301,8 @@ def train_inn(inn, dataloaders: DataLoaders,
         
         if epoch - epoch_prev_save >= epochs_between_saves:
             print(f"We are saving at {batch_no+1} batches, {epoch} epochs...")
-            save_network(inn, optimizer, epoch, avg_training_loss, f"{round(epoch, 2)}_{round(all_test_losses[-1], 2) if len(all_test_losses)>0 else '-'}")
+            save_network(inn, optimizer, epoch, avg_training_loss, f"{round(epoch, 2)}_{round(all_test_losses[-1], 2) if len(all_test_losses)>0 else '-'}_{run_name}")
+            print(f"Finished saving.")
             epoch_prev_save = epoch
 
         if epoch - epoch_prev_test >= epochs_between_tests:
@@ -271,8 +318,14 @@ def train_inn(inn, dataloaders: DataLoaders,
     
             wandb.log({"test_loss": test_loss, "min_test_loss": min(all_test_losses), "max_test_psnr_y": max(all_test_psnr_y), "test_psnr": test_psnr_rgb, "test_psnr_y": test_psnr_y, "test_ssim": test_ssim, "test_loss_recon": test_lossr, "test_loss_guide": test_lossg, "test_loss_distr": test_lossd, "epoch": epoch}, step=batch_no)
             epoch_prev_test = epoch
+        stop = timer()
+        time_testing_saving_sampling += stop-start
 
+        start = timer()
         total_loss.backward()
+        stop = timer()
+        time_backward += stop - start
+
         torch.nn.utils.clip_grad_norm_(inn.parameters(), max_norm=grad_clipping)
         optimizer.step()
         scheduler.step()
@@ -282,59 +335,63 @@ def train_inn(inn, dataloaders: DataLoaders,
 
 
 ####    EXECUTION CODE    ####
+if __name__ == '__main__':
+    resume_latest_run = False
+    resume_run_id = "ki9ty9x7"
 
-resume_latest_run = False
+    wandb.login()
+    run = wandb.init(
+        project="invertible-rescaling-network",
+        dir=".",
+        resume=resume_latest_run if resume_latest_run else None,
+        id=resume_run_id if resume_run_id else None,
+        config={
+            "batch_size": 16,
+            "lambda_recon": 1,
+            "lambda_guide": 16,
+            "lambda_distr": 1,
+            "initial_learning_rate": 0.0004,
+            "img_size": 144,
+            "scale": 4, # ds_count = log2(scale)
+            "inv_per_ds": 8,
+            "inv_first_level_extra": 0,
+            "inv_final_level_extra": 0,
+            "seed": 10,
+            "grad_clipping": 0.1,
+            "full_size_test_imgs": True,
+            "lr_batch_milestones": [100000, 200000, 300000, 400000],
+            "lr_gamma": 0.5
+    })
+    config = wandb.config
 
-wandb.login()
-run = wandb.init(
-    project="invertible-rescaling-network",
-    dir="/rds/user/mgm52/hpc-work/invertible-image-rescaling",
-    resume=resume_latest_run,
-    config={
-        "batch_size": 16,
-        "lambda_recon": 1,
-        "lambda_guide": 16,
-        "lambda_distr": 1,
-        "initial_learning_rate": 0.0004,
-        "img_size": 144,
-        "scale": 4, # ds_count = log2(scale)
-        "inv_per_ds": 8,
-        "inv_first_level_extra": 0,
-        "inv_final_level_extra": 0,
-        "seed": 10,
-        "grad_clipping": 0.1,
-        "full_size_test_imgs": True,
-        "lr_batch_milestones": [100000, 200000, 300000, 400000],
-        "lr_gamma": 0.5
-})
-config = wandb.config
+    torch.manual_seed(config.seed)
+    random.seed(config.seed)
+    np.random.seed(config.seed)
 
-torch.manual_seed(config.seed)
-random.seed(config.seed)
-np.random.seed(config.seed)
+    # Load the data
+    dataloaders = Div2KDataLoaders(config.batch_size, config.img_size, full_size_test_imgs=config.full_size_test_imgs, test_img_size_divisor=config.scale)
 
-# Load the data
-dataloaders = Div2KDataLoaders(config.batch_size, config.img_size, full_size_test_imgs=config.full_size_test_imgs, test_img_size_divisor=config.scale)
+    # Load the network
+    ds_count = int(np.log2(config.scale))
+    assert(ds_count==np.log2(config.scale)), "Scale must be a power of 2."
+    inn = IRN(3, config.img_size, config.img_size, ds_count=ds_count, inv_per_ds=config.inv_per_ds, inv_final_level_extra=config.inv_final_level_extra, inv_first_level_extra=config.inv_first_level_extra)
 
-# Load the network
-ds_count = int(np.log2(config.scale))
-assert(ds_count==np.log2(config.scale)), "Scale must be a power of 2."
-inn = IRN(3, config.img_size, config.img_size, ds_count=ds_count, inv_per_ds=config.inv_per_ds, inv_final_level_extra=config.inv_final_level_extra, inv_first_level_extra=config.inv_first_level_extra)
+    if resume_latest_run:
+        load_checkpoint_path = latest_file_in_folder("./saved_models", ".pth")
+    elif resume_run_id:
+        load_checkpoint_path = latest_file_in_folder("./saved_models", f"{run.id}.pth")
+    else:
+        load_checkpoint_path = ""
 
-if resume_latest_run:
-    load_checkpoint_path = latest_file_in_folder("./saved_models")
-else:
-    load_checkpoint_path = ""
+    # Train the network
+    # TODO: replace all these parameters with a "config" param...
+    all_training_losses, all_test_losses = train_inn(inn, dataloaders,
+                                                    max_batches=-1, max_epochs=-1, target_loss=-1,
+                                                    epochs_between_tests=6, epochs_between_training_log=0.05, epochs_between_samples=1, epochs_between_saves=3, 
+                                                    learning_rate=config.initial_learning_rate, grad_clipping=config.grad_clipping, scale=config.scale,
+                                                    lambda_recon=config.lambda_recon, lambda_guide=config.lambda_guide, lambda_distr=config.lambda_distr,
+                                                    lr_batch_milestones=config.lr_batch_milestones, lr_gamma=config.lr_gamma,
+                                                    load_checkpoint_path=load_checkpoint_path, run_name=run.id)
+    #plt.savefig(f'output/test_loss_{int(time.time())}_{int(all_test_losses[-1])}', dpi=100)
 
-# Train the network
-# TODO: replace all these parameters with a "config" param...
-all_training_losses, all_test_losses = train_inn(inn, dataloaders,
-                                                max_batches=-1, max_epochs=-1, target_loss=-1,
-                                                epochs_between_tests=6, epochs_between_training_log=0.05, epochs_between_samples=0.25, epochs_between_saves=6, 
-                                                learning_rate=config.initial_learning_rate, grad_clipping=config.grad_clipping, scale=config.scale,
-                                                lambda_recon=config.lambda_recon, lambda_guide=config.lambda_guide, lambda_distr=config.lambda_distr,
-                                                lr_batch_milestones=config.lr_batch_milestones, lr_gamma=config.lr_gamma,
-                                                load_checkpoint_path=load_checkpoint_path)
-#plt.savefig(f'output/test_loss_{int(time.time())}_{int(all_test_losses[-1])}', dpi=100)
-
-run.finish()
+    run.finish()
