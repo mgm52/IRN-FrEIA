@@ -32,10 +32,11 @@ def latest_file_in_folder(folder_path, file_ending=""):
     latest_file_path = max(glob.glob(f"{folder_path}/*{file_ending}"), key=os.path.getctime)
     return latest_file_path
 
-def see_irn_example(x, y, z, x_recon_from_y, scale, see=True, save=True, wandb_log=False, wandb_step=-1, name=0, render_grid=True):
+def see_irn_example(x, y, z, x_recon_from_y, scale, see=True, save=True, wandb_log=False, wandb_step=-1, name=0, render_grid=True, metric_crop_border=4):
     print("-> About to visualize irn example")
     i = random.randint(0, len(x)-1)
 
+    # Don't border crop the downscaled images
     x_downscaled_bc = imresize(x[i], scale=1.0/scale)
     x_upscaled_bc = imresize(x_downscaled_bc, scale=scale)
 
@@ -48,19 +49,23 @@ def see_irn_example(x, y, z, x_recon_from_y, scale, see=True, save=True, wandb_l
         (y[i], y[i].shape),
         (x[i], x[i].shape),
         (x_upscaled_bc, x_upscaled_bc.shape),
-        (x_recon_from_y[i], x_recon_from_y[i].shape),
+        (x_recon_from_y, x_recon_from_y.shape),
     ]]
 
     # Test the network
     # mnist8 consists of 16-tone images
     # TODO: report y psnr
+    x_upscaled_bc_cropped = crop_tensor_border(x_upscaled_bc, metric_crop_border)
+    x_recon_from_y_cropped = crop_tensor_border(x_recon_from_y, metric_crop_border)
+    x_cropped = crop_tensor_border(x[i], metric_crop_border)
+
     psnr_metric = torchmetrics.PeakSignalNoiseRatio(data_range=1).cuda()
     [psnr_irn_down, psnr_bi_up, psnr_irn_up] = [round(float(psnr_metric(pred_vs_goal[0], pred_vs_goal[1]).item()), 2) for pred_vs_goal in [
-        (y[i], x_downscaled_bc), (x_upscaled_bc, x[i]), (x_recon_from_y[i], x[i])]]
+        (y[i], x_downscaled_bc), (x_upscaled_bc_cropped, x_cropped), (x_recon_from_y_cropped, x_cropped)]]
 
     ssim_metric = torchmetrics.StructuralSimilarityIndexMeasure(data_range=1).cuda()
     [ssim_irn_down, ssim_bi_up, ssim_irn_up] = [round(float(ssim_metric(torch.unsqueeze(pred_vs_goal[0], dim=0), torch.unsqueeze(pred_vs_goal[1], dim=0)).item()), 4) for pred_vs_goal in [
-        (y[i], x_downscaled_bc), (x_upscaled_bc, x[i]), (x_recon_from_y[i], x[i])]]
+        (y[i], x_downscaled_bc), (x_upscaled_bc_cropped, x_cropped), (x_recon_from_y_cropped, x_cropped)]]
 
     if render_grid:
         fig = see_multiple_imgs(imgs, 2, 3,
@@ -81,7 +86,7 @@ def see_irn_example(x, y, z, x_recon_from_y, scale, see=True, save=True, wandb_l
         # Warning: see=True does nothing for render_grid=False
         if save:
             file_names = ["HR", "Bi-down", f"IRN-down-{psnr_irn_down}-{ssim_irn_down}", f"Bi-down-Bi-up-{psnr_bi_up}-{ssim_bi_up}", f"IRN-down-IRN-up-{psnr_irn_up}-{ssim_irn_up}"]
-            file_imgs = [x[i], x_downscaled_bc, y[i], x_upscaled_bc, x_recon_from_y[i]]
+            file_imgs = [x[i], x_downscaled_bc, y[i], x_upscaled_bc, x_recon_from_y]
             filename_start = f'output/out_{int(time.time())}_{i}_{name}_'
 
             for fni in range(len(file_names)):
@@ -294,7 +299,7 @@ def train_inn(inn, dataloaders: DataLoaders,
             with torch.no_grad():
                 index_of_sample_image = 4
                 x, y, z, x_recon_from_y = sample_inn(inn, dataloaders.test_dataloader.dataset[index_of_sample_image][0].unsqueeze(dim=0))
-            see_irn_example(x, y, z, x_recon_from_y, scale, see=False, save=True, wandb_log=True, wandb_step=batch_no, name=all_test_losses[-1] if len(all_test_losses)>0 else "-", render_grid=False)
+            see_irn_example(x, y, z, x_recon_from_y, scale, see=False, save=True, wandb_log=True, wandb_step=batch_no, name=all_test_losses[-1] if len(all_test_losses)>0 else "-", render_grid=False, metric_crop_border=scale)
             #for j in range(2):
             #    see_irn_example(x, y, z, x_recon_from_y, see=False, save=False, name=all_test_losses[-1])
             epoch_prev_sample = epoch
