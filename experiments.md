@@ -64,6 +64,12 @@
 	- Idea: test network's performance after cutting out quantities of low-use nodes.
 	- Would be helpful to also perform this analysis on a rival network architecture. Perhaps I could find a model on which some analysis like this has been done already.
 
+- What if I evaluate my 4x model's ability at 2x rescaling?
+	- To evaluate 2x models usually: irn-downscale 2x -> irn-upscale 2x
+	- What if I tried: bi-upscale 2x -> irn-downscale 4x -> irn-upscale 4x -> bi-downscale 2x.
+	- The increased number of parameters in the 4k model might even mean it performs better?
+	- Perhap could enhance by performing sharpening on the bi-upscaled image...
+
 ### New functionality
 
 - Optimize for very high resolutions, e.g. on 4k images. The "wavelet flow: fast training of high resolution normalizing flows" paper makes the case that their architecture can work on high res data better. Try to work this into my results and get an improvement on old architecture!
