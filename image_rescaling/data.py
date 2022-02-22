@@ -49,10 +49,7 @@ def process_div2k_img(data, shape, verbose=False):
         print(f'Med : {np.median(im)}')
         print(f'Min : {np.amin(im)}')
 
-    max_color = 1
-    im = np.clip(im, 0, max_color)
-    #im = np.floor(im)
-    im = im / max_color
+    im = np.clip(im, 0, 1)
 
     return im
 

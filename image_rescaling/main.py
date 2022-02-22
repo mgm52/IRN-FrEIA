@@ -49,15 +49,15 @@ def see_irn_example(x, y, z, x_recon_from_y, scale, see=True, save=True, wandb_l
         (y[i], y[i].shape),
         (x[i], x[i].shape),
         (x_upscaled_bc, x_upscaled_bc.shape),
-        (x_recon_from_y, x_recon_from_y.shape),
+        (x_recon_from_y, [3, x_recon_from_y.shape[-2], x_recon_from_y.shape[-1]]),
     ]]
 
     # Test the network
     # mnist8 consists of 16-tone images
     # TODO: report y psnr
-    x_upscaled_bc_cropped = crop_tensor_border(x_upscaled_bc, metric_crop_border)
-    x_recon_from_y_cropped = crop_tensor_border(x_recon_from_y, metric_crop_border)
-    x_cropped = crop_tensor_border(x[i], metric_crop_border)
+    x_upscaled_bc_cropped = torch.squeeze(crop_tensor_border(x_upscaled_bc, metric_crop_border))
+    x_recon_from_y_cropped = torch.squeeze(crop_tensor_border(x_recon_from_y, metric_crop_border))
+    x_cropped = torch.squeeze(crop_tensor_border(x[i], metric_crop_border))
 
     psnr_metric = torchmetrics.PeakSignalNoiseRatio(data_range=1).cuda()
     [psnr_irn_down, psnr_bi_up, psnr_irn_up] = [round(float(psnr_metric(pred_vs_goal[0], pred_vs_goal[1]).item()), 2) for pred_vs_goal in [
@@ -347,7 +347,7 @@ def train_inn(inn, dataloaders: DataLoaders,
 ####    EXECUTION CODE    ####
 if __name__ == '__main__':
     resume_latest_run = False
-    resume_run_id = "id0gl2vc"
+    resume_run_id = ""
 
     wandb.login()
     run = wandb.init(
@@ -356,20 +356,20 @@ if __name__ == '__main__':
         resume=resume_latest_run if resume_latest_run else None,
         id=resume_run_id if resume_run_id else None,
         config={
-            "batch_size": 16,
-            "lambda_recon": 1,
-            "lambda_guide": 16,
-            "lambda_distr": 1,
-            "initial_learning_rate": 0.0002,
+            "batch_size": 10,
+            "lambda_recon": 100,
+            "lambda_guide": 20,
+            "lambda_distr": 0.01,
+            "initial_learning_rate": 0.001,
             "img_size": 144,
             "scale": 4, # ds_count = log2(scale)
-            "inv_per_ds": 8,
+            "inv_per_ds": 2,
             "inv_first_level_extra": 0,
             "inv_final_level_extra": 0,
             "seed": 10,
-            "grad_clipping": 0.1,
+            "grad_clipping": 2,
             "full_size_test_imgs": True,
-            "lr_batch_milestones": [100000, 200000, 300000, 400000],
+            "lr_batch_milestones": [7000, 14000, 21000, 28000],
             "lr_gamma": 0.5
     })
     config = wandb.config
@@ -397,7 +397,7 @@ if __name__ == '__main__':
     # TODO: replace all these parameters with a "config" param...
     all_training_losses, all_test_losses = train_inn(inn, dataloaders,
                                                     max_batches=-1, max_epochs=-1, target_loss=-1,
-                                                    epochs_between_tests=6, epochs_between_training_log=0.05, epochs_between_samples=1, epochs_between_saves=3, 
+                                                    epochs_between_tests=25, epochs_between_training_log=0.2, epochs_between_samples=5, epochs_between_saves=5, 
                                                     learning_rate=config.initial_learning_rate, grad_clipping=config.grad_clipping, scale=config.scale,
                                                     lambda_recon=config.lambda_recon, lambda_guide=config.lambda_guide, lambda_distr=config.lambda_distr,
                                                     lr_batch_milestones=config.lr_batch_milestones, lr_gamma=config.lr_gamma,
