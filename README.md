@@ -85,3 +85,4 @@ OTHER
    - Discuss what the "minimum" downscaling PSNR should be in order to create perceptually identitical downscaled images.
    - Look into other metrics for evaluating downscaled images. Why not take the PSNR of the downscaled image against GT?
    - Could do a 3D plot of "downscale PSNR" on X axis, "upscale PSNR" on Y axis, and "model parameters" on Z axis to compare different models.
+   - NOTE: I've observed that decreasing loss_guidance leads to good reconstruction far far more quickly, and produces a sharper downscaled image. Can I evaluate this somehow?
