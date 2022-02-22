@@ -79,3 +79,9 @@ OTHER
   - Could relate to rate-distortion theory: https://en.wikipedia.org/wiki/Rate%E2%80%93distortion_theory
  
  - Can include explanation of JSD and how it can be substituted for our surrogate Loss_distr, which is an approximation of cross-entropy
+
+ - From what I can tell, there isn't a single decided metric for evaluating models at the image rescaling task. Instead we have two metrics: reconstruction PSNR and downscaling PSNR.
+   - Perhaps I could discuss the merits of different ways of combining these metrics
+   - Discuss what the "minimum" downscaling PSNR should be in order to create perceptually identitical downscaled images.
+   - Look into other metrics for evaluating downscaled images. Why not take the PSNR of the downscaled image against GT?
+   - Could do a 3D plot of "downscale PSNR" on X axis, "upscale PSNR" on Y axis, and "model parameters" on Z axis to compare different models.
