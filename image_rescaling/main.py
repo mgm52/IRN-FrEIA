@@ -156,26 +156,26 @@ def test_inn(inn,
 
     return total_loss, psnr_RGB, psnr_Y, ssim, loss_recon, loss_guide, loss_distr
 
-def save_network(inn, optimizer, epoch, loss, name):
+def save_network(inn, optimizer, epoch, min_training_loss, all_test_losses, all_test_psnr_y, name):
     save_filename = f"saved_models/model_{int(time.time())}_{name}.pth"
 
     torch.save({
         "epoch": epoch,
-        "loss": loss,
-        "model_state_dict": inn.state_dict(),
-        "optimizer_state_dict": optimizer.state_dict()
+        "model_state_dict":     inn.state_dict(),
+        "optimizer_state_dict": optimizer.state_dict(),
+        "min_training_loss":    min_training_loss,
+        "min_test_loss":        min(all_test_losses)            if len(all_test_losses) > 0 else 99999,
+        "max_test_psnr_y":      max(all_test_psnr_y)            if len(all_test_psnr_y) > 0 else 99999
     }, save_filename)
 
 def load_network(inn, optimizer, path):
-    load_filename = path
-
     print(f"Loading {path}")
 
     checkpoint = torch.load(path)
     inn.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
-    return inn, optimizer, checkpoint["epoch"], checkpoint["loss"]
+    return inn, optimizer, checkpoint.get("epoch", 0), checkpoint.get("min_training_loss", 99999), checkpoint.get("min_test_loss", 99999), checkpoint.get("max_test_psnr_y", -999)
 
 def train_inn(inn, dataloaders: DataLoaders,
     max_batches=10000,
@@ -200,30 +200,32 @@ def train_inn(inn, dataloaders: DataLoaders,
     optimizer = torch.optim.Adam(inn.parameters(), lr=learning_rate, weight_decay=0.00001, amsgrad=use_amsgrad)
     
     if(load_checkpoint_path):
-        inn, optimizer, epoch, avg_training_loss = load_network(inn, optimizer, load_checkpoint_path)
+        inn, optimizer, epoch, min_training_loss, min_test_loss, max_test_psnr_y = load_network(inn, optimizer, load_checkpoint_path)
+
         batch_no = math.floor(epoch * dataloaders.train_len / dataloaders.train_dataloader.batch_size)
 
-        recent_training_losses = [avg_training_loss]
-        all_avg_training_losses = [avg_training_loss]
+        all_test_losses = [min_test_loss]
+        all_test_psnr_y = [max_test_psnr_y]
 
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=lr_batch_milestones, gamma=lr_gamma, last_epoch=batch_no)
     else:
+        min_training_loss = 99999
+
         epoch = 0
         batch_no = 0
 
-        recent_training_losses = []
-        all_avg_training_losses = []
-        avg_training_loss = target_loss+1
+        all_test_losses = []
+        all_test_psnr_y = []
 
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=lr_batch_milestones, gamma=lr_gamma)
+
+    recent_training_losses = []
+    avg_training_loss = target_loss+1
 
     epoch_prev_test = epoch-1
     epoch_prev_training_log = epoch-1
     epoch_prev_sample = epoch-1
     epoch_prev_save = epoch-1
-
-    all_test_losses = []
-    all_test_psnr_y = []
 
     train_iter = iter(dataloaders.train_dataloader)
 
@@ -254,7 +256,9 @@ def train_inn(inn, dataloaders: DataLoaders,
             print(f"TOTAL time_testing_saving_sampling TIME: {round(time_testing_saving_sampling, 2)}s")
             print(f"(UNACCOUNTED FOR TIME): {round((epoch_time) - (time_forward + time_loss + time_dataloading + time_backward + time_testing_saving_sampling), 2)}s")
             print("---")
-            wandb.log({"epoch_time_s": epoch_time, "epoch": epoch}, step=batch_no)
+
+            # Log epoch time, as well as lr to track the scheduler's progress
+            wandb.log({"epoch_time_s": epoch_time, "lr": scheduler.get_last_lr(), "epoch": epoch}, step=batch_no)
 
             time_forward = 0
             time_loss = 0
@@ -286,12 +290,13 @@ def train_inn(inn, dataloaders: DataLoaders,
         start = timer()
         if epoch - epoch_prev_training_log >= epochs_between_training_log:
             avg_training_loss = sum(recent_training_losses) / len(recent_training_losses)
-            all_avg_training_losses.append(avg_training_loss)
+            min_training_loss = min([min_training_loss, avg_training_loss])
+            
             print(f"At {batch_no} batches (epoch {epoch}):")
             #print(f'loss_recon={loss_recon}, loss_guide={loss_guide}, loss_distr={loss_distr}')
             #print(f'Avg training loss, in last {epochs_between_training_log if epoch>0 else 0} epochs: {avg_training_loss}')
             recent_training_losses = []
-            wandb.log({"train_loss": avg_training_loss, "epoch": epoch}, step=batch_no)
+            wandb.log({"train_loss": avg_training_loss, "min_training_loss": min_training_loss, "epoch": epoch}, step=batch_no)
             epoch_prev_training_log = epoch
 
         if epoch - epoch_prev_sample >= epochs_between_samples:
@@ -306,7 +311,7 @@ def train_inn(inn, dataloaders: DataLoaders,
         
         if epoch - epoch_prev_save >= epochs_between_saves:
             print(f"We are saving at {batch_no+1} batches, {epoch} epochs...")
-            save_network(inn, optimizer, epoch, avg_training_loss, f"{round(epoch, 2)}_{round(all_test_losses[-1], 2) if len(all_test_losses)>0 else '-'}_{run_name}")
+            save_network(inn, optimizer, epoch, min_training_loss, all_test_losses, all_test_psnr_y, f"{round(epoch, 2)}_{round(all_test_losses[-1], 2) if len(all_test_losses)>0 else '-'}_{run_name}")
             print(f"Finished saving.")
             epoch_prev_save = epoch
 
@@ -321,6 +326,7 @@ def train_inn(inn, dataloaders: DataLoaders,
             all_test_psnr_y.append(test_psnr_y)
             print("")
     
+            # IDEA: also track greyscale PSNR or greyscale loss, as this gives us a sense of how much blame is just on hue
             wandb.log({"test_loss": test_loss, "min_test_loss": min(all_test_losses), "max_test_psnr_y": max(all_test_psnr_y), "test_psnr": test_psnr_rgb, "test_psnr_y": test_psnr_y, "test_ssim": test_ssim, "test_loss_recon": test_lossr, "test_loss_guide": test_lossg, "test_loss_distr": test_lossd, "epoch": epoch}, step=batch_no)
             epoch_prev_test = epoch
         stop = timer()
@@ -335,14 +341,13 @@ def train_inn(inn, dataloaders: DataLoaders,
         optimizer.step()
         scheduler.step()
         batch_no+=1
-    return all_avg_training_losses, all_test_losses
-
+    return min_training_loss, all_test_losses
 
 
 ####    EXECUTION CODE    ####
 if __name__ == '__main__':
     resume_latest_run = False
-    resume_run_id = "ki9ty9x7"
+    resume_run_id = "id0gl2vc"
 
     wandb.login()
     run = wandb.init(
@@ -355,7 +360,7 @@ if __name__ == '__main__':
             "lambda_recon": 1,
             "lambda_guide": 16,
             "lambda_distr": 1,
-            "initial_learning_rate": 0.0004,
+            "initial_learning_rate": 0.0002,
             "img_size": 144,
             "scale": 4, # ds_count = log2(scale)
             "inv_per_ds": 8,
