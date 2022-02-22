@@ -84,4 +84,4 @@ OTHER
    - Perhaps I could discuss the merits of different ways of combining these metrics
    - Discuss what the "minimum" downscaling PSNR should be in order to create perceptually identitical downscaled images.
    - Look into other metrics for evaluating downscaled images. Why not take the PSNR of the downscaled image against GT?
-   - Could do a 3D plot of "downscale PSNR" on X axis, "upscale PSNR" on Y axis, and "model parameters" on Y axis to compare different models.
+   - Could do a 3D plot of "downscale PSNR" on X axis, "upscale PSNR" on Y axis, and "model parameters" on Z axis to compare different models.
