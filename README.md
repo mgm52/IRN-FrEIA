@@ -31,8 +31,9 @@ COMPETING PAPERS
   - Outperforms IRN on not-power-of-two image rescaling
   - DIV2K 4x PSNR/SSIM: 34.94/?, 3.8M params
 
-WORKSHOPS
+WORKSHOPS ETC
 - CLIC (March 23, 4 pages inc references) http://compression.cc/cfp/
+- Siggraph student research poster competition (April 26, max 2 page poster) https://s2022.siggraph.org/event/student-research-competition/
 - Others to be announced March/April
 
 DISS
