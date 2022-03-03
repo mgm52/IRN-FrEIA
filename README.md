@@ -37,9 +37,12 @@ WORKSHOPS ETC
 - Others to be announced March/April
 
 DISS
+- Important dates https://www.cst.cam.ac.uk/teaching/part-ii/projects/dates
 - Dissertation structure explanation https://www.cst.cam.ac.uk/teaching/part-ii/projects/dissertation
 - Assessment criteria https://www.cst.cam.ac.uk/teaching/part-ii/projects/assessment
 - Projects from previous years https://www.cl.cam.ac.uk/teaching/projects/overseers/archive.html
+  - Mukul's: https://www.cl.cam.ac.uk/teaching/projects/archive/2021/my364-dissertation.pdf
+  - Melissa's: https://www.cl.cam.ac.uk/teaching/projects/archive/2021/my364-dissertation.pdf
 
 HPC
 - CSD3 application form 	https://www.hpc.cam.ac.uk/rcs-application
