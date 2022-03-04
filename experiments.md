@@ -25,6 +25,8 @@
 	- *[Param] I wouldn't bother using adversarial (GAN training is frustratingly unstable) or MMD loss (you most likely won't see benifits for high dimensional data).*
 
 - Explore tips and tricks FrEIA page https://vll-hd.github.io/FrEIA/_build/html/tutorial/tips_tricks_faq.html
+
+- I have a theory that adding random noise to the three loss function coefficients might improve generalisation. Or I could even have a schedule in which we routinely switch between prioritising guidance, reconstruction, distribution loss.
 ### Open experiments / questions
 
 - Is the loss_distribution_match term really necessary? Seems to me that it just bolsters the reconstruction loss metric. How do results compare if I drop loss_dist_match and put more emphasis on recon?
