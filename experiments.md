@@ -47,6 +47,7 @@
 	- It means we can establish a bijection between x and z, and so by optimizing z we optimize x?
   - *[Param] If z was constant, the mapping can't be bijective since there is a reduction in dimensions. The point of the known latent is to capture stochasticity in a controllable manner.*
   - **UPDATE** [Max]: [This paper (section 4.5)](https://arxiv.org/pdf/2111.05133.pdf) actually did try taking the latent distribution to be z=0, and did find that it achieves similar/better(!) results like I hypothesized. What I meant by "take the latent distribution to be z=0" was "train the network by resampling from z=0 instead of from z~N(0, 1)". The mapping is still bijective, it's just that the z produced by the network approaches 0 as we train.
+  - *[Param] I was unaware of this work. I'll have to take a closer look to figure out what they do here.*
 
 - Greater iteration on loss parameters - try dropping L_guide, etc.
 	- Worth noting that the inclusion of other parameters slows the speed at which loss_distr is improved.
@@ -59,18 +60,21 @@
 - What does repeated application of the network look like?
 
 - How well does the network perform when given images downscaled by other means (i.e. test IRN on super-resolution tasks)?
+	- *[Param] Worth a shot. It will fit in nicely in the dissertation (say in "applications") even if it is moderately successful.*
 
 - Can I perform some sort of analysis on which nodes or weights are most useful within the network? 
 	- I expect there are some established methods of doing this.
 	- Idea: report histogram of weight values, histogram of sum of weight values leaving each node.
 	- Idea: test network's performance after cutting out quantities of low-use nodes.
 	- Would be helpful to also perform this analysis on a rival network architecture. Perhaps I could find a model on which some analysis like this has been done already.
+	- *[Param] That changes the focus of the drastically in my opinion. It might be better off leaving such implementation-specific analysis and focus on improving the results or looking for more applications.*
 
 - What if I evaluate my 4x model's ability at 2x rescaling?
 	- To evaluate 2x models usually: irn-downscale 2x -> irn-upscale 2x
 	- What if I tried: bi-upscale 2x -> irn-downscale 4x -> irn-upscale 4x -> bi-downscale 2x.
 	- The increased number of parameters in the 4k model might even mean it performs better?
 	- Perhap could enhance by performing sharpening on the bi-upscaled image...
+	- *[Param] I don't see the motivation for such an extension.*
 
 ### New functionality
 
@@ -108,5 +112,6 @@
 		- Simplest way: replace our loss function with a GAN that discriminates between GT pairs of frames and irn-upscaled pairs, as well as between bicubic-downscaled pairs and irn-downscaled pairs. In fact, we may be able to get away without even changing the model architecture at all: just expect it to learn to up/downscale in a more stable manner given the loss function.
 		- More creative way: instead of comparing two frames using a GAN, take any image and synthesize a "next frame" by adding random noise, translation, rescaling, rotation, etc. For our loss function, check that `irn_downupscaled(gt_img)->irn_downupscaled(distort(gt_img))` is the same transformation as `gt_img->distort(gt_img)`. In other words, check that `irn_downupscaled(distort(gt_img)) == distort(irn_downupscaled(gt_img))`. To make it more accurate-to-life I could perhaps replace `distort()` with an optical-flow based motion prediction from real frames or some such.
 			- Update: it turns out this idea has ben explored by Rafal Mantiuk! This 2019 paper describes a couple of different transformations similar to what I described... https://arxiv.org/pdf/1902.10424.pdf
+			- *[Param]: There is actually a follow-up within our group. Look at this [project](https://www.cl.cam.ac.uk/research/rainbow/projects/tcr/). If you want to brainstorm, I should be able to convince Aamir to join us for a chat. I believe he had some ideas on extending TCR to videos but didn't have time to try them out.*
 
 - Idea: repurpose a trained IRN rescaling model into a super-resolution model by training an "assistant" network that converts from LR to LR_X, where LR_X is formatted in a way conducive to good upscaling by IRN.
