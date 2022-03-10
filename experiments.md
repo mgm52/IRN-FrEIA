@@ -27,6 +27,9 @@
 - Explore tips and tricks FrEIA page https://vll-hd.github.io/FrEIA/_build/html/tutorial/tips_tricks_faq.html
 
 - I have a theory that adding random noise to the three loss function coefficients might improve generalisation. Or I could even have a schedule in which we routinely switch between prioritising guidance, reconstruction, distribution loss.
+
+- Would be fun to try hyperparameter tuning using [maximal update parameterisation](https://old.reddit.com/r/MachineLearning/comments/tb0jm6/r_you_cant_train_gpt3_on_a_single_gpu_but_you_can/)
+
 ### Open experiments / questions
 
 - Is the loss_distribution_match term really necessary? Seems to me that it just bolsters the reconstruction loss metric. How do results compare if I drop loss_dist_match and put more emphasis on recon?
@@ -75,6 +78,7 @@
 	- The increased number of parameters in the 4k model might even mean it performs better?
 	- Perhap could enhance by performing sharpening on the bi-upscaled image...
 	- *[Param] I don't see the motivation for such an extension.*
+	- _**Update** [Max]: the motivation for this extension comes from the fact that the IRN paper has separate models for 2x and 4x rescaling. I believe that instead of having separate models, we may be able to repurpose the 4x model to perform 2x rescaling too._
 
 ### New functionality
 
