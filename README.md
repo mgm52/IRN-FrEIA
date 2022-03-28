@@ -31,14 +31,18 @@ COMPETING PAPERS
   - Outperforms IRN on not-power-of-two image rescaling
   - DIV2K 4x PSNR/SSIM: 34.94/?, 3.8M params
 
-WORKSHOPS
+WORKSHOPS ETC
 - CLIC (March 23, 4 pages inc references) http://compression.cc/cfp/
+- Siggraph student research poster competition (April 26, max 2 page poster) https://s2022.siggraph.org/event/student-research-competition/
 - Others to be announced March/April
 
 DISS
+- Important dates https://www.cst.cam.ac.uk/teaching/part-ii/projects/dates
 - Dissertation structure explanation https://www.cst.cam.ac.uk/teaching/part-ii/projects/dissertation
 - Assessment criteria https://www.cst.cam.ac.uk/teaching/part-ii/projects/assessment
 - Projects from previous years https://www.cl.cam.ac.uk/teaching/projects/overseers/archive.html
+  - Mukul's: https://www.cl.cam.ac.uk/teaching/projects/archive/2020/msr45-dissertation.pdf
+  - Melissa's: https://www.cl.cam.ac.uk/teaching/projects/archive/2021/my364-dissertation.pdf
 
 HPC
 - CSD3 application form 	https://www.hpc.cam.ac.uk/rcs-application
@@ -85,3 +89,4 @@ OTHER
    - Discuss what the "minimum" downscaling PSNR should be in order to create perceptually identitical downscaled images.
    - Look into other metrics for evaluating downscaled images. Why not take the PSNR of the downscaled image against GT?
    - Could do a 3D plot of "downscale PSNR" on X axis, "upscale PSNR" on Y axis, and "model parameters" on Z axis to compare different models.
+   - NOTE: I've observed that decreasing loss_guidance leads to good reconstruction far far more quickly, and produces a sharper downscaled image. Can I evaluate this somehow?
