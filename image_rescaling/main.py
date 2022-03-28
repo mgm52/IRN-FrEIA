@@ -10,6 +10,8 @@ from torchvision.utils import save_image
 import torchmetrics
 import numpy as np
 import wandb
+from test import test_inn
+from network_saving import save_network, load_network
 import math
 from timeit import default_timer as timer
 import glob
@@ -106,77 +108,6 @@ def see_irn_example(x, y, z, x_recon_from_y, scale, see=True, save=True, wandb_l
 def crop_tensor_border(x, border):
     return x[..., border:-border, border:-border]
 
-def test_inn(inn,
-    dataloaders: DataLoaders,
-    scale,
-    lambda_recon=1,
-    lambda_guide=1,
-    lambda_distr=1,
-    calculate_metrics=False,
-    metric_crop_border=4
-):
-    max_test_batches = dataloaders.test_len / dataloaders.test_dataloader.batch_size
-    assert(max_test_batches == int(max_test_batches)), f"Test batch size ({dataloaders.test_dataloader.batch_size}) does not fit into test dataset ({dataloaders.test_len})"
-
-    # Get losses across test dataset
-    test_metrics = []
-    test_iter = iter(dataloaders.test_dataloader)
-    
-    for test_batch_no in range(int(max_test_batches)):
-        with torch.no_grad():
-            # todo: use batch_size=-1 instead, then check that it works
-            x, _ = next(test_iter)
-            x, y, z, x_recon_from_y = sample_inn(inn, x)
-            loss_recon, loss_guide, loss_distr, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale)
-
-        if calculate_metrics:
-            x_recon_from_y_cropped = crop_tensor_border(x_recon_from_y, metric_crop_border)
-            x_cropped = crop_tensor_border(x, metric_crop_border)
-
-            psnr_metric = torchmetrics.PeakSignalNoiseRatio(data_range=1).cuda()
-            psnr_RGB = psnr_metric(x_recon_from_y_cropped, x_cropped)
-            psnr_Y = psnr_metric(rgb_to_y(x_recon_from_y_cropped/1)*1.0/255.0, rgb_to_y(x_cropped/1)*1.0/255.0)
-
-            ssim_metric = torchmetrics.StructuralSimilarityIndexMeasure(data_range=1).cuda()
-            ssim = ssim_metric(x_recon_from_y_cropped, x_cropped)
-        else:
-            psnr_RGB = -1
-            psnr_Y = -1
-            ssim = -1
-
-        test_metrics.append([float(total_loss), float(psnr_RGB), float(psnr_Y), float(ssim), float(loss_recon), float(loss_guide), float(loss_distr)])
-
-    # Calcuate average for each of our metrics
-    [total_loss, psnr_RGB, psnr_Y, ssim, loss_recon, loss_guide, loss_distr] = np.array(test_metrics).mean(axis=0)
-
-    print(f"Calculated metrics for {len(test_metrics)} test batches.")
-    print(f'Average loss_recon={loss_recon}, loss_guide={loss_guide}, loss_distr={loss_distr}')
-    print(f'Average total loss in test set: {total_loss}')
-    print(f'Average PSNR(RGB)/SSIM in test set: {round(float(psnr_RGB), 4)}/{round(float(ssim), 4)}')
-
-    return total_loss, psnr_RGB, psnr_Y, ssim, loss_recon, loss_guide, loss_distr
-
-def save_network(inn, optimizer, epoch, min_training_loss, all_test_losses, all_test_psnr_y, name):
-    save_filename = f"saved_models/model_{int(time.time())}_{name}.pth"
-
-    torch.save({
-        "epoch": epoch,
-        "model_state_dict":     inn.state_dict(),
-        "optimizer_state_dict": optimizer.state_dict(),
-        "min_training_loss":    min_training_loss,
-        "min_test_loss":        min(all_test_losses)            if len(all_test_losses) > 0 else 99999,
-        "max_test_psnr_y":      max(all_test_psnr_y)            if len(all_test_psnr_y) > 0 else 99999
-    }, save_filename)
-
-def load_network(inn, optimizer, path):
-    print(f"Loading {path}")
-
-    checkpoint = torch.load(path)
-    inn.load_state_dict(checkpoint['model_state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-
-    return inn, optimizer, checkpoint.get("epoch", 0), checkpoint.get("min_training_loss", 99999), checkpoint.get("min_test_loss", 99999), checkpoint.get("max_test_psnr_y", -999)
-
 def train_inn(inn, dataloaders: DataLoaders,
     max_batches=10000,
     max_epochs=-1,
@@ -200,7 +131,7 @@ def train_inn(inn, dataloaders: DataLoaders,
     optimizer = torch.optim.Adam(inn.parameters(), lr=learning_rate, weight_decay=0.00001, amsgrad=use_amsgrad)
     
     if(load_checkpoint_path):
-        inn, optimizer, epoch, min_training_loss, min_test_loss, max_test_psnr_y = load_network(inn, optimizer, load_checkpoint_path)
+        inn, optimizer, epoch, min_training_loss, min_test_loss, max_test_psnr_y = load_network(inn, load_checkpoint_path, optimizer)
 
         batch_no = math.floor(epoch * dataloaders.train_len / dataloaders.train_dataloader.batch_size)
 
@@ -258,7 +189,7 @@ def train_inn(inn, dataloaders: DataLoaders,
             print("---")
 
             # Log epoch time, as well as lr to track the scheduler's progress
-            wandb.log({"epoch_time_s": epoch_time, "lr": scheduler.get_last_lr(), "epoch": epoch}, step=batch_no)
+            wandb.log({"epoch_time_s": epoch_time, "lr": scheduler.get_last_lr()[0], "epoch": epoch}, step=batch_no)
 
             time_forward = 0
             time_loss = 0
@@ -273,12 +204,12 @@ def train_inn(inn, dataloaders: DataLoaders,
         time_dataloading += stop-start
 
         start = timer()
-        x, y, z, x_recon_from_y = sample_inn(inn, x)
+        x, y, z, x_recon_from_y, mean_y, std_y = sample_inn(inn, x)
         stop = timer()
         time_forward += stop - start
 
         start = timer()
-        loss_recon, loss_guide, loss_distr, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale)
+        loss_recon, loss_guide, loss_distr, loss_batchnorm, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale, mean_y, std_y)
         stop = timer()
         time_loss += stop - start
 
@@ -292,9 +223,8 @@ def train_inn(inn, dataloaders: DataLoaders,
             avg_training_loss = sum(recent_training_losses) / len(recent_training_losses)
             min_training_loss = min([min_training_loss, avg_training_loss])
             
-            print(f"At {batch_no} batches (epoch {epoch}):")
-            #print(f'loss_recon={loss_recon}, loss_guide={loss_guide}, loss_distr={loss_distr}')
-            #print(f'Avg training loss, in last {epochs_between_training_log if epoch>0 else 0} epochs: {avg_training_loss}')
+            print(f"At {batch_no} batches (epoch {epoch}): Avg training loss, in last {epochs_between_training_log if epoch>0 else 0} epochs: {avg_training_loss}")
+            print(f'loss_recon={loss_recon}, loss_guide={loss_guide}, loss_distr={loss_distr}, loss_batchnorm={loss_batchnorm}')
             recent_training_losses = []
             wandb.log({"train_loss": avg_training_loss, "min_training_loss": min_training_loss, "epoch": epoch}, step=batch_no)
             epoch_prev_training_log = epoch
@@ -303,7 +233,7 @@ def train_inn(inn, dataloaders: DataLoaders,
             print(f"We are sampling at {batch_no+1} batches, {epoch} epochs...")
             with torch.no_grad():
                 index_of_sample_image = 4
-                x, y, z, x_recon_from_y = sample_inn(inn, dataloaders.test_dataloader.dataset[index_of_sample_image][0].unsqueeze(dim=0))
+                x, y, z, x_recon_from_y, mean_y, std_y = sample_inn(inn, dataloaders.test_dataloader.dataset[index_of_sample_image][0].unsqueeze(dim=0))
             see_irn_example(x, y, z, x_recon_from_y, scale, see=False, save=True, wandb_log=True, wandb_step=batch_no, name=all_test_losses[-1] if len(all_test_losses)>0 else "-", render_grid=False, metric_crop_border=scale)
             #for j in range(2):
             #    see_irn_example(x, y, z, x_recon_from_y, see=False, save=False, name=all_test_losses[-1])
@@ -321,13 +251,13 @@ def train_inn(inn, dataloaders: DataLoaders,
             print(f'In test dataset, in last {epochs_between_tests if epoch>0 else 0} epochs:')
 
             # Crop the border of test images by the resize scale to avoid capturing outliers (this is done in the IRN paper)
-            test_loss, test_psnr_rgb, test_psnr_y, test_ssim, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, scale, lambda_recon, lambda_guide, lambda_distr, calculate_metrics=True, metric_crop_border=scale)
+            test_loss, test_psnr_rgb, test_psnr_y, test_ssim_RGB, test_ssim_Y, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, scale, lambda_recon, lambda_guide, lambda_distr, calculate_metrics=True, metric_crop_border=scale)
             all_test_losses.append(test_loss)
             all_test_psnr_y.append(test_psnr_y)
             print("")
     
             # IDEA: also track greyscale PSNR or greyscale loss, as this gives us a sense of how much blame is just on hue
-            wandb.log({"test_loss": test_loss, "min_test_loss": min(all_test_losses), "max_test_psnr_y": max(all_test_psnr_y), "test_psnr": test_psnr_rgb, "test_psnr_y": test_psnr_y, "test_ssim": test_ssim, "test_loss_recon": test_lossr, "test_loss_guide": test_lossg, "test_loss_distr": test_lossd, "epoch": epoch}, step=batch_no)
+            wandb.log({"test_loss": test_loss, "min_test_loss": min(all_test_losses), "max_test_psnr_y": max(all_test_psnr_y), "test_psnr": test_psnr_rgb, "test_psnr_y": test_psnr_y, "test_ssim": test_ssim_RGB, "test_ssim_y": test_ssim_Y, "test_loss_recon": test_lossr, "test_loss_guide": test_lossg, "test_loss_distr": test_lossd, "epoch": epoch}, step=batch_no)
             epoch_prev_test = epoch
         stop = timer()
         time_testing_saving_sampling += stop-start
@@ -370,7 +300,8 @@ if __name__ == '__main__':
             "grad_clipping": 2,
             "full_size_test_imgs": True,
             "lr_batch_milestones": [7000, 14000, 21000, 28000],
-            "lr_gamma": 0.5
+            "lr_gamma": 0.5,
+            "batchnorm": False
     })
     config = wandb.config
 
@@ -384,7 +315,9 @@ if __name__ == '__main__':
     # Load the network
     ds_count = int(np.log2(config.scale))
     assert(ds_count==np.log2(config.scale)), "Scale must be a power of 2."
-    inn = IRN(3, config.img_size, config.img_size, ds_count=ds_count, inv_per_ds=config.inv_per_ds, inv_final_level_extra=config.inv_final_level_extra, inv_first_level_extra=config.inv_first_level_extra)
+    inn = IRN(3, config.img_size, config.img_size, ds_count=ds_count,
+              inv_per_ds=config.inv_per_ds, inv_final_level_extra=config.inv_final_level_extra,
+              inv_first_level_extra=config.inv_first_level_extra, batchnorm=config["batchnorm"])
 
     if resume_latest_run:
         load_checkpoint_path = latest_file_in_folder("./saved_models", ".pth")
@@ -397,7 +330,7 @@ if __name__ == '__main__':
     # TODO: replace all these parameters with a "config" param...
     all_training_losses, all_test_losses = train_inn(inn, dataloaders,
                                                     max_batches=-1, max_epochs=-1, target_loss=-1,
-                                                    epochs_between_tests=25, epochs_between_training_log=0.2, epochs_between_samples=5, epochs_between_saves=5, 
+                                                    epochs_between_tests=0.1, epochs_between_training_log=0.2, epochs_between_samples=5, epochs_between_saves=5, 
                                                     learning_rate=config.initial_learning_rate, grad_clipping=config.grad_clipping, scale=config.scale,
                                                     lambda_recon=config.lambda_recon, lambda_guide=config.lambda_guide, lambda_distr=config.lambda_distr,
                                                     lr_batch_milestones=config.lr_batch_milestones, lr_gamma=config.lr_gamma,

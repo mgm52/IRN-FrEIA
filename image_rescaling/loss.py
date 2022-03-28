@@ -1,7 +1,9 @@
 import torch
 from bicubic_pytorch.core import imresize
+from networks.freia_invertible_rescaling import quantize_ste
 
-def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale):
+# Expects x to be in range [0, 1], y to be roughly in range [0, 1].
+def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale, mean_y, std_y, batchnorm=False):
     # Purpose of Loss_Reconstruction: accurate upscaling
     loss_recon = torch.abs(x - x_recon_from_y).mean()# + torch.abs(torch.std(x, axis=1) - torch.std(x_recon_from_y, axis=1)).mean()
 
@@ -10,7 +12,7 @@ def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_reco
         # --> for this reason L2 should be better at reducing PSNR than L1
         # [Param] Funnily enough, previous work shows that L1 often produces higher PSNR. See table 1 https://arxiv.org/pdf/1511.08861.pdf
         # [Param] What you need is probably a smoothed L1 (see discussion in .md file)
-    x_downscaled = imresize(x, scale=1.0/scale)
+    x_downscaled = quantize_ste(imresize(x, scale=1.0/scale))
     loss_guide = ((x_downscaled - y)**2).mean()
 
     # Purpose of Loss_Distribution_Match_Surrogate:
@@ -22,13 +24,17 @@ def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_reco
     # Because prob(x from dataset) is a constant: we have -1 * log2(prob(z in our normal dist))
     # Because surprisal in a standard normal dist is O(x^2): we have z^2
     loss_distr = (z**2).mean()
+
+    if batchnorm: loss_batchnorm = torch.abs(mean_y) + torch.abs(1 - std_y)
+    else: loss_batchnorm = 0
     
     # Total_Loss = lr * Loss_Reconstruction + lg * Loss_Guide + ld * Loss_Distribution_Match_Surrogate
     loss_recon *= lambda_recon
     loss_guide *= lambda_guide
     loss_distr *= lambda_distr
+    if batchnorm: loss_batchnorm *= 1000
 
-    total_loss = loss_recon + loss_guide + loss_distr
+    total_loss = loss_recon + loss_guide + loss_distr + loss_batchnorm
     #total_loss = torch.mean((0.5 - x_recon_from_y)**2)
 
-    return loss_recon, loss_guide, loss_distr, total_loss
+    return loss_recon, loss_guide, loss_distr, loss_batchnorm, total_loss

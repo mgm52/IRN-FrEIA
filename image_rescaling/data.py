@@ -72,7 +72,8 @@ def process_xbit_img(data, shape, clip_values=True, floor_values=True, bits=4, s
 
     return im
 
-def see_multiple_imgs(imgs, rows, cols, row_titles=[], plot_titles=[], see=True, save=False, filename="out"):
+def see_multiple_imgs(imgs, rows, cols, row_titles=[], plot_titles=[], see=True, save=False, filename="out", smallSize=False):
+    if len(imgs)==0: return None
     assert rows*cols >= len(imgs), f'Cannot print {len(imgs)} images on a {rows}x{cols} grid'
     
     f, axes = plt.subplots(figsize=(3*cols, 3*rows) , nrows=rows, ncols=1, sharey=True) 
@@ -90,11 +91,21 @@ def see_multiple_imgs(imgs, rows, cols, row_titles=[], plot_titles=[], see=True,
         # Add subplot to index i-1 within a rows*cols grid
         ax = f.add_subplot(rows,cols,i)
         if i-1<len(plot_titles): ax.set_title(plot_titles[i-1], fontsize=int(9.0 + maximgsize * 2.0/100.0), loc="left")
-        if i-1<len(imgs) and not (imgs[i-1] is None): ax.imshow(imgs[i-1])
+        if i-1<len(imgs) and not (imgs[i-1] is None):
+            if len(imgs[i-1].shape) == 4 and imgs[i-1].shape[0] == 1:
+                imgs[i-1] = imgs[i-1][0]
+            if imgs[i-1].shape[0] == 3:
+                imgs[i-1] = imgs[i-1].permute(1, 2, 0)
+            ax.imshow(imgs[i-1])
         ax.axis('off')
 
     plt.tight_layout()
-    f.set_size_inches(cols * maximgsize * 7.5/256.0, rows * maximgsize * 9/256.0)
+    if smallSize:
+        f.set_size_inches(cols * maximgsize * 0.5/256.0, rows * maximgsize * 0.6/256.0)
+    else:
+        f.set_size_inches(cols * maximgsize * 7.5/256.0, rows * maximgsize * 9/256.0)
+
+    plt.axis("off")
 
     if(save): plt.savefig(filename + '.png', dpi=200)
     if(see): plt.show()
