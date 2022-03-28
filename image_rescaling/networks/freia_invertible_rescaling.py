@@ -109,7 +109,7 @@ class StraightThroughEstimator(torch.autograd.Function):
     
     @staticmethod
     def backward(ctx, grad_output):
-        return grad_output
+        return grad_output, None
 
 def quantize_ste(x):
     return StraightThroughEstimator.apply(x, lambda y : (torch.clamp(y, min=0, max=1) * 255.0).round() / 255.0)
