@@ -132,7 +132,7 @@ def sample_inn(inn, x: torch.Tensor, batchnorm=False):
 
     y_and_z, jac = inn([x])
     y, z = y_and_z[:, :3], y_and_z[:, 3:]
-    y = quantize_ste(y)
+    #y = quantize_ste(y)
 
     # If y conforms to a standard normal dist, which we will try to force it to, we would have mean_y=0 and std_y=1
     if batchnorm:

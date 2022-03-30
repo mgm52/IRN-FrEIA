@@ -109,7 +109,7 @@ def get_sample_function_bicub(scale):
         return x, y, z, x_recon_from_y, mean_y, std_y
     return sample_function_bicub
 
-def get_sample_function_imgfolder(path, img_size_divisor=1):
+def get_sample_function_imgfolder(path, scale, img_size_divisor=1):
 
     img_iter = iter(get_test_dataloader(path, img_size_divisor))
 
@@ -140,7 +140,7 @@ def test_rescaling(dataloaders, x_y_z_recon_mean_std_function, test_metrics_func
         easiest_imgs = []
         psnry_scores = []
 
-        sample_function_imgload = get_sample_function_imgfolder("./data/DIV2K/DIV2K_valid_x4recon_IRN-mine-191", 4)
+        #sample_function_imgload = get_sample_function_imgfolder("./data/DIV2K/DIV2K_valid_x4recon_IRN-mine-191", 4, 4)
 
         for test_batch_no in range(int(max_test_batches)):
             # todo: use batch_size=-1 instead, then check that it works
@@ -152,7 +152,7 @@ def test_rescaling(dataloaders, x_y_z_recon_mean_std_function, test_metrics_func
             
             x, y, z, x_recon_from_y, mean_y, std_y = x_y_z_recon_mean_std_function(x_raw)
             
-            x_l, y_l, z_l, x_recon_from_y_l, mean_y_l, std_y_l = sample_function_imgload(x_raw)
+            #x_l, y_l, z_l, x_recon_from_y_l, mean_y_l, std_y_l = sample_function_imgload(x_raw)
 
 
 
@@ -183,13 +183,14 @@ def test_rescaling(dataloaders, x_y_z_recon_mean_std_function, test_metrics_func
             #if test_scores[-1] > 0.6:
             all_test_scores.append(test_scores)
 
-        see_multiple_imgs(easiest_imgs, 5, 5, row_titles=[], plot_titles=[], see=True, save=False, filename="dataview", smallSize=True)
-        see_multiple_imgs(hardest_imgs, 5, 5, row_titles=[], plot_titles=[], see=True, save=False, filename="dataview", smallSize=True)
+        #see_multiple_imgs(easiest_imgs, 5, 5, row_titles=[], plot_titles=[], see=True, save=False, filename="dataview", smallSize=True)
+        #see_multiple_imgs(hardest_imgs, 5, 5, row_titles=[], plot_titles=[], see=True, save=False, filename="dataview", smallSize=True)
+        
         #plt.hist(psnry_scores, bins=10)
         #plt.show()
         
-        plt.hist(psnry_scores, bins=20)
-        plt.show()
+        #plt.hist(psnry_scores, bins=20)
+        #plt.show()
 
         #plt.hist(psnry_scores, bins=35)
         #plt.show()
@@ -235,7 +236,7 @@ def test_bicub(dataloaders, scale, metric_crop_border):
 
 def test_imgfolder(dataloaders, scale, metric_crop_border, path):
     test_function = get_test_function_psnr_ssim(metric_crop_border)
-    sample_function = get_sample_function_imgfolder(path, scale)
+    sample_function = get_sample_function_imgfolder(path, scale, scale)
     psnr_RGB, psnr_Y, ssim, ssim_Y = test_rescaling(dataloaders, sample_function, test_function)
     return psnr_RGB, psnr_Y, ssim, ssim_Y
 
@@ -270,6 +271,8 @@ def get_saved_inn(path):
     return inn
 
 if __name__ == '__main__':
+    
+
     torch.manual_seed(10)
     random.seed(10)
     np.random.seed(10)

@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torch.nn.init as init
 
 class DenseBlock(nn.Module):
-    def __init__(self, channel_in, channel_out, gc=32, bias=True, use_xavier=False):
+    def __init__(self, channel_in, channel_out, gc=32, bias=True, use_xavier=True):
         super(DenseBlock, self).__init__()
         self.conv1 = nn.Conv2d(channel_in + 0 * gc, gc, 3, 1, 1, bias=bias)
         self.conv2 = nn.Conv2d(channel_in + 1 * gc, gc, 3, 1, 1, bias=bias)
@@ -19,7 +19,7 @@ class DenseBlock(nn.Module):
                 init.xavier_normal_(layer.weight)
             else:
                 nn.init.kaiming_normal_(layer.weight)
-            layer.weight.data *= 0.01
+            layer.weight.data *= 0.1
             if layer.bias is not None: layer.bias.data.zero_()
 
     def forward(self, x):

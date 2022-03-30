@@ -126,7 +126,8 @@ def train_inn(inn, dataloaders: DataLoaders,
     lr_batch_milestones=[100000, 200000, 300000, 400000],
     lr_gamma=0.5,
     load_checkpoint_path="",
-    run_name=""
+    run_name="",
+    mean_distr_loss=False
 ):
     optimizer = torch.optim.Adam(inn.parameters(), lr=learning_rate, weight_decay=0.00001, amsgrad=use_amsgrad)
     
@@ -209,7 +210,7 @@ def train_inn(inn, dataloaders: DataLoaders,
         time_forward += stop - start
 
         start = timer()
-        loss_recon, loss_guide, loss_distr, loss_batchnorm, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale, mean_y, std_y)
+        loss_recon, loss_guide, loss_distr, loss_batchnorm, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale, mean_y, std_y, mean_distr_loss=mean_distr_loss)
         stop = timer()
         time_loss += stop - start
 
@@ -251,7 +252,7 @@ def train_inn(inn, dataloaders: DataLoaders,
             print(f'In test dataset, in last {epochs_between_tests if epoch>0 else 0} epochs:')
 
             # Crop the border of test images by the resize scale to avoid capturing outliers (this is done in the IRN paper)
-            test_loss, test_psnr_rgb, test_psnr_y, test_ssim_RGB, test_ssim_Y, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, scale, lambda_recon, lambda_guide, lambda_distr, calculate_metrics=True, metric_crop_border=scale)
+            test_loss, test_psnr_rgb, test_psnr_y, test_ssim_RGB, test_ssim_Y, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, scale, lambda_recon, lambda_guide, lambda_distr, metric_crop_border=scale)
             all_test_losses.append(test_loss)
             all_test_psnr_y.append(test_psnr_y)
             print("")
@@ -278,6 +279,9 @@ def train_inn(inn, dataloaders: DataLoaders,
 if __name__ == '__main__':
     resume_latest_run = False
     resume_run_id = ""
+    resume_file_name = "model_1648581402_1629.0_0.13_32i8k7h9.pth" # optional
+
+    #os.environ['CUDA_LAUNCH_BLOCKING'] = str(1)
 
     wandb.login()
     run = wandb.init(
@@ -286,22 +290,23 @@ if __name__ == '__main__':
         resume=resume_latest_run if resume_latest_run else None,
         id=resume_run_id if resume_run_id else None,
         config={
-            "batch_size": 10,
-            "lambda_recon": 100,
-            "lambda_guide": 20,
-            "lambda_distr": 0.01,
-            "initial_learning_rate": 0.001,
+            "batch_size": 16,
+            "lambda_recon": 1,
+            "lambda_guide": 16,
+            "lambda_distr": 1,
+            "initial_learning_rate": 0.0002,
             "img_size": 144,
             "scale": 4, # ds_count = log2(scale)
-            "inv_per_ds": 2,
+            "inv_per_ds": 8,
             "inv_first_level_extra": 0,
             "inv_final_level_extra": 0,
             "seed": 10,
-            "grad_clipping": 2,
+            "grad_clipping": 10,
             "full_size_test_imgs": True,
-            "lr_batch_milestones": [7000, 14000, 21000, 28000],
+            "lr_batch_milestones": [100000, 200000, 300000, 400000],
             "lr_gamma": 0.5,
-            "batchnorm": False
+            "batchnorm": False,
+            "mean_distr_loss": False
     })
     config = wandb.config
 
@@ -319,10 +324,12 @@ if __name__ == '__main__':
               inv_per_ds=config.inv_per_ds, inv_final_level_extra=config.inv_final_level_extra,
               inv_first_level_extra=config.inv_first_level_extra, batchnorm=config["batchnorm"])
 
-    if resume_latest_run:
-        load_checkpoint_path = latest_file_in_folder("./saved_models", ".pth")
+    if resume_file_name:
+        load_checkpoint_path = latest_file_in_folder("./saved_models", resume_file_name)
     elif resume_run_id:
         load_checkpoint_path = latest_file_in_folder("./saved_models", f"{run.id}.pth")
+    elif resume_latest_run:
+        load_checkpoint_path = latest_file_in_folder("./saved_models", ".pth")
     else:
         load_checkpoint_path = ""
 
@@ -333,6 +340,7 @@ if __name__ == '__main__':
                                                     epochs_between_tests=0.1, epochs_between_training_log=0.2, epochs_between_samples=5, epochs_between_saves=5, 
                                                     learning_rate=config.initial_learning_rate, grad_clipping=config.grad_clipping, scale=config.scale,
                                                     lambda_recon=config.lambda_recon, lambda_guide=config.lambda_guide, lambda_distr=config.lambda_distr,
+                                                    mean_distr_loss=config.mean_distr_loss,
                                                     lr_batch_milestones=config.lr_batch_milestones, lr_gamma=config.lr_gamma,
                                                     load_checkpoint_path=load_checkpoint_path, run_name=run.id)
     #plt.savefig(f'output/test_loss_{int(time.time())}_{int(all_test_losses[-1])}', dpi=100)
