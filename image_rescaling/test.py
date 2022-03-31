@@ -33,23 +33,25 @@ def rgb_to_y(rgb_imgs, round255=False, plus16=True, bgr=False):
     if round255: output = output.round()
     return output.unsqueeze(dim=1) / 255.0
 
-def get_test_function_irn(lambda_recon, lambda_guide, lambda_distr, scale, metric_crop_border):
+def get_test_function_irn(lambda_recon, lambda_guide, lambda_distr, scale, metric_crop_border, fast_gpu_testing=False, mean_losses=False, quantize_recon=False):
     def test_function_irn(x, y, z, x_recon_from_y, mean_y, std_y):
-        loss_recon, loss_guide, loss_distr, loss_batchnorm, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale, mean_y, std_y)
+        loss_recon, loss_guide, loss_distr, loss_batchnorm, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale, mean_y, std_y, batchnorm=False, mean_losses=mean_losses, quantize_recon=quantize_recon)
 
-        test_function_psnr_ssim = get_test_function_psnr_ssim(metric_crop_border)
+        test_function_psnr_ssim = get_test_function_psnr_ssim(metric_crop_border, fast_gpu_testing=fast_gpu_testing)
         [psnr_RGB, psnr_Y, ssim_RGB, ssim_Y] = test_function_psnr_ssim(x, y, z, x_recon_from_y, mean_y, std_y)
 
         return [float(total_loss), psnr_RGB, psnr_Y, ssim_RGB, ssim_Y, float(loss_recon), float(loss_guide), float(loss_distr)]
     return test_function_irn
 
-def get_test_function_psnr_ssim(metric_crop_border):
+def get_test_function_psnr_ssim(metric_crop_border, fast_gpu_testing=False):
     # expects x, y, x_recon in range [0,1]
     def test_function_psnr_ssim(x, y, z, x_recon_from_y, mean_y, std_y):
         # Convert to CPU because results differ on CUDA
-        x = quantize_ste(x).cpu()
-        y = quantize_ste(y).cpu()
-        x_recon_from_y = quantize_ste(x_recon_from_y).cpu()
+        test_device = "cuda:0" if fast_gpu_testing else "cpu"
+
+        x = quantize_ste(x).to(test_device)
+        y = quantize_ste(y).to(test_device)
+        x_recon_from_y = quantize_ste(x_recon_from_y).to(test_device)
 
         #print(f"Computing for x_recon_from_y with mean {x_recon_from_y.mean()} std {x_recon_from_y.std()} min {x_recon_from_y.min()} max {x_recon_from_y.max()}")
         #print(x_recon_from_y * 255)
@@ -66,7 +68,7 @@ def get_test_function_psnr_ssim(metric_crop_border):
         #print((x_recon_from_y_cropped_Y - x_cropped_Y).mean())
 
         # Note: PSNR and SSIM score is unaffected by data scale.
-        psnr_metric = torchmetrics.PeakSignalNoiseRatio(data_range=1).cpu()
+        psnr_metric = torchmetrics.PeakSignalNoiseRatio(data_range=1).to(test_device)
 
         #see_multiple_imgs([x_recon_from_y_cropped, x_cropped], 1, 2, row_titles=[], plot_titles=[], see=True, save=False, smallSize=True)
 
@@ -75,7 +77,7 @@ def get_test_function_psnr_ssim(metric_crop_border):
 
         
 
-        ssim_metric = torchmetrics.StructuralSimilarityIndexMeasure(data_range=1).cpu()
+        ssim_metric = torchmetrics.StructuralSimilarityIndexMeasure(data_range=1).to(test_device)
         
         ssim_RGB   = ssim_metric(x_recon_from_y_cropped, x_cropped)
 
@@ -220,9 +222,12 @@ def test_inn(inn,
     lambda_guide=1,
     lambda_distr=1,
     metric_crop_border=4,
-    save_imgs=False
+    save_imgs=False,
+    fast_gpu_testing=False,
+    mean_losses=False,
+    quantize_recon=False
 ):
-    test_function_irn = get_test_function_irn(lambda_recon, lambda_guide, lambda_distr, scale, metric_crop_border)
+    test_function_irn = get_test_function_irn(lambda_recon, lambda_guide, lambda_distr, scale, metric_crop_border, fast_gpu_testing=fast_gpu_testing, mean_losses=mean_losses, quantize_recon=quantize_recon)
     sample_function_irn = get_sample_function_irn(inn)
     total_loss, psnr_RGB, psnr_Y, ssim_RGB, ssim_Y, loss_recon, loss_guide, loss_distr = test_rescaling(dataloaders, sample_function_irn, test_function_irn, save_imgs=save_imgs)
 

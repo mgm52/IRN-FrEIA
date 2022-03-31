@@ -127,7 +127,9 @@ def train_inn(inn, dataloaders: DataLoaders,
     lr_gamma=0.5,
     load_checkpoint_path="",
     run_name="",
-    mean_distr_loss=False
+    mean_losses=False,
+    fast_gpu_testing=False,
+    quantize_recon_loss=False
 ):
     optimizer = torch.optim.Adam(inn.parameters(), lr=learning_rate, weight_decay=0.00001, amsgrad=use_amsgrad)
     
@@ -210,7 +212,7 @@ def train_inn(inn, dataloaders: DataLoaders,
         time_forward += stop - start
 
         start = timer()
-        loss_recon, loss_guide, loss_distr, loss_batchnorm, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale, mean_y, std_y, mean_distr_loss=mean_distr_loss)
+        loss_recon, loss_guide, loss_distr, loss_batchnorm, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale, mean_y, std_y, mean_losses=mean_losses, quantize_recon=quantize_recon_loss)
         stop = timer()
         time_loss += stop - start
 
@@ -252,7 +254,7 @@ def train_inn(inn, dataloaders: DataLoaders,
             print(f'In test dataset, in last {epochs_between_tests if epoch>0 else 0} epochs:')
 
             # Crop the border of test images by the resize scale to avoid capturing outliers (this is done in the IRN paper)
-            test_loss, test_psnr_rgb, test_psnr_y, test_ssim_RGB, test_ssim_Y, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, scale, lambda_recon, lambda_guide, lambda_distr, metric_crop_border=scale)
+            test_loss, test_psnr_rgb, test_psnr_y, test_ssim_RGB, test_ssim_Y, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, scale, lambda_recon, lambda_guide, lambda_distr, metric_crop_border=scale, fast_gpu_testing=fast_gpu_testing, mean_losses=mean_losses, quantize_recon=quantize_recon_loss)
             all_test_losses.append(test_loss)
             all_test_psnr_y.append(test_psnr_y)
             print("")
@@ -279,7 +281,7 @@ def train_inn(inn, dataloaders: DataLoaders,
 if __name__ == '__main__':
     resume_latest_run = False
     resume_run_id = ""
-    resume_file_name = "model_1648581402_1629.0_0.13_32i8k7h9.pth" # optional
+    resume_file_name = "" # optional
 
     #os.environ['CUDA_LAUNCH_BLOCKING'] = str(1)
 
@@ -306,7 +308,9 @@ if __name__ == '__main__':
             "lr_batch_milestones": [100000, 200000, 300000, 400000],
             "lr_gamma": 0.5,
             "batchnorm": False,
-            "mean_distr_loss": False
+            "mean_losses": False,
+            "fast_gpu_testing": False, # gives slightly inaccurate but much faster test scores
+            "quantize_recon_loss": False
     })
     config = wandb.config
 
@@ -337,10 +341,10 @@ if __name__ == '__main__':
     # TODO: replace all these parameters with a "config" param...
     all_training_losses, all_test_losses = train_inn(inn, dataloaders,
                                                     max_batches=-1, max_epochs=-1, target_loss=-1,
-                                                    epochs_between_tests=0.1, epochs_between_training_log=0.2, epochs_between_samples=5, epochs_between_saves=5, 
+                                                    epochs_between_tests=100, epochs_between_training_log=0.2, epochs_between_samples=25, epochs_between_saves=10, 
                                                     learning_rate=config.initial_learning_rate, grad_clipping=config.grad_clipping, scale=config.scale,
                                                     lambda_recon=config.lambda_recon, lambda_guide=config.lambda_guide, lambda_distr=config.lambda_distr,
-                                                    mean_distr_loss=config.mean_distr_loss,
+                                                    mean_losses=config.mean_losses, fast_gpu_testing=config.fast_gpu_testing, quantize_recon_loss=config.quantize_recon_loss,
                                                     lr_batch_milestones=config.lr_batch_milestones, lr_gamma=config.lr_gamma,
                                                     load_checkpoint_path=load_checkpoint_path, run_name=run.id)
     #plt.savefig(f'output/test_loss_{int(time.time())}_{int(all_test_losses[-1])}', dpi=100)

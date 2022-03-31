@@ -1,0 +1,32 @@
+program: image_rescaling/main.py
+method: bayes
+metric:
+  goal: minimize
+  name: test_ssim_y
+parameters:
+  initial_learning_rate:
+    max: 0.01
+    min: 0.00001
+    distribution: uniform
+  lambda_recon:
+    max: 200
+    min: 0.01
+    distribution: uniform
+  lambda_guide:
+    max: 200
+    min: 0.01
+    distribution: uniform
+  lambda_distr:
+    max: 200
+    min: 0.01
+    distribution: uniform
+  inv_per_ds:
+    max: 10
+    min: 2
+    distribution: int_uniform
+  batch_size:
+    max: 16
+    min: 4
+    distribution: int_uniform
+  img_size:
+    values: [16, 64, 144, 256]
