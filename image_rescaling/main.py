@@ -1,10 +1,12 @@
 # Train a given model
+from argparse import ArgumentParser
 import time
 from tracemalloc import start
 from networks.freia_invertible_rescaling import IRN, sample_inn
 from data import mnist8_iterator, process_xbit_img, see_multiple_imgs, process_div2k_img
 from data2 import Div2KDataLoaders, DataLoaders
 from bicubic_pytorch.core import imresize
+import config_loader
 import torch
 from torchvision.utils import save_image
 import torchmetrics
@@ -16,6 +18,7 @@ import math
 from timeit import default_timer as timer
 import glob
 import os
+import config_loader
 import random
 from loss import calculate_irn_loss
 import matplotlib.pyplot as plt
@@ -108,30 +111,19 @@ def see_irn_example(x, y, z, x_recon_from_y, scale, see=True, save=True, wandb_l
 def crop_tensor_border(x, border):
     return x[..., border:-border, border:-border]
 
-def train_inn(inn, dataloaders: DataLoaders,
-    max_batches=10000,
-    max_epochs=-1,
-    target_loss=-1,
-    learning_rate=0.001,
-    lambda_recon=1,
-    lambda_guide=1,
-    lambda_distr=1,
-    epochs_between_tests=250,
-    epochs_between_training_log=250,
-    epochs_between_samples=5000,
-    epochs_between_saves=5000,
-    use_amsgrad=False,
-    grad_clipping=10.0,
-    scale=2,
-    lr_batch_milestones=[100000, 200000, 300000, 400000],
-    lr_gamma=0.5,
-    load_checkpoint_path="",
-    run_name="",
-    mean_losses=False,
-    fast_gpu_testing=False,
-    quantize_recon_loss=False
-):
-    optimizer = torch.optim.Adam(inn.parameters(), lr=learning_rate, weight_decay=0.00001, amsgrad=use_amsgrad)
+def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run_name="run"):
+
+    config_loader.check_keys(cfg,
+    [
+        "max_batches", "max_epochs", "target_loss",
+        "epochs_between_tests", "epochs_between_training_log", "epochs_between_samples", "epochs_between_saves",
+        "initial_learning_rate", "grad_clipping", "scale",
+        "lambda_recon", "lambda_guide", "lambda_distr",
+        "mean_losses", "fast_gpu_testing", "quantize_recon_loss",
+        "lr_batch_milestones", "lr_gamma"
+    ])
+
+    optimizer = torch.optim.Adam(inn.parameters(), lr=cfg["initial_learning_rate"], weight_decay=0.00001, amsgrad=False)
     
     if(load_checkpoint_path):
         inn, optimizer, epoch, min_training_loss, min_test_loss, max_test_psnr_y = load_network(inn, load_checkpoint_path, optimizer)
@@ -141,7 +133,7 @@ def train_inn(inn, dataloaders: DataLoaders,
         all_test_losses = [min_test_loss]
         all_test_psnr_y = [max_test_psnr_y]
 
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=lr_batch_milestones, gamma=lr_gamma, last_epoch=batch_no)
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=cfg["lr_batch_milestones"], gamma=cfg["lr_gamma"], last_epoch=batch_no)
     else:
         min_training_loss = 99999
 
@@ -151,10 +143,10 @@ def train_inn(inn, dataloaders: DataLoaders,
         all_test_losses = []
         all_test_psnr_y = []
 
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=lr_batch_milestones, gamma=lr_gamma)
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=cfg["lr_batch_milestones"], gamma=cfg["lr_gamma"])
 
     recent_training_losses = []
-    avg_training_loss = target_loss+1
+    avg_training_loss = cfg["target_loss"]+1
 
     epoch_prev_test = epoch-1
     epoch_prev_training_log = epoch-1
@@ -170,7 +162,7 @@ def train_inn(inn, dataloaders: DataLoaders,
     time_backward = 0
     time_testing_saving_sampling = 0
 
-    while (max_batches==-1 or batch_no < max_batches) and (target_loss==-1 or target_loss<=avg_training_loss) and (max_epochs==-1 or epoch < max_epochs):
+    while (cfg["max_batches"]==-1 or batch_no < cfg["max_batches"]) and (cfg["target_loss"]==-1 or cfg["target_loss"]<=avg_training_loss) and (cfg["max_epochs"]==-1 or epoch < cfg["max_epochs"]):
         optimizer.zero_grad()
         
         start = timer()
@@ -212,7 +204,7 @@ def train_inn(inn, dataloaders: DataLoaders,
         time_forward += stop - start
 
         start = timer()
-        loss_recon, loss_guide, loss_distr, loss_batchnorm, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale, mean_y, std_y, mean_losses=mean_losses, quantize_recon=quantize_recon_loss)
+        loss_recon, loss_guide, loss_distr, loss_batchnorm, total_loss = calculate_irn_loss(cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], x, y, z, x_recon_from_y, cfg["scale"], mean_y, std_y, mean_losses=cfg["mean_losses"], quantize_recon=cfg["quantize_recon_loss"])
         stop = timer()
         time_loss += stop - start
 
@@ -222,39 +214,39 @@ def train_inn(inn, dataloaders: DataLoaders,
         epoch = float(samples / dataloaders.train_len)
 
         start = timer()
-        if epoch - epoch_prev_training_log >= epochs_between_training_log:
+        if epoch - epoch_prev_training_log >= cfg["epochs_between_training_log"]:
             avg_training_loss = sum(recent_training_losses) / len(recent_training_losses)
             min_training_loss = min([min_training_loss, avg_training_loss])
             
-            print(f"At {batch_no} batches (epoch {epoch}): Avg training loss, in last {epochs_between_training_log if epoch>0 else 0} epochs: {avg_training_loss}")
+            print(f"At {batch_no} batches (epoch {epoch}): Avg training loss, in last {cfg['epochs_between_training_log'] if epoch>0 else 0} epochs: {avg_training_loss}")
             print(f'loss_recon={loss_recon}, loss_guide={loss_guide}, loss_distr={loss_distr}, loss_batchnorm={loss_batchnorm}')
             recent_training_losses = []
-            wandb.log({"train_loss": avg_training_loss, "min_training_loss": min_training_loss, "epoch": epoch}, step=batch_no)
+            wandb.log({"train_loss": avg_training_loss, "train_loss_recon": loss_recon, "train_loss_guide": loss_guide, "train_loss_distr": loss_distr, "min_training_loss": min_training_loss, "epoch": epoch}, step=batch_no)
             epoch_prev_training_log = epoch
 
-        if epoch - epoch_prev_sample >= epochs_between_samples:
+        if epoch - epoch_prev_sample >= cfg["epochs_between_samples"]:
             print(f"We are sampling at {batch_no+1} batches, {epoch} epochs...")
             with torch.no_grad():
                 index_of_sample_image = 4
                 x, y, z, x_recon_from_y, mean_y, std_y = sample_inn(inn, dataloaders.test_dataloader.dataset[index_of_sample_image][0].unsqueeze(dim=0))
-            see_irn_example(x, y, z, x_recon_from_y, scale, see=False, save=True, wandb_log=True, wandb_step=batch_no, name=all_test_losses[-1] if len(all_test_losses)>0 else "-", render_grid=False, metric_crop_border=scale)
+            see_irn_example(x, y, z, x_recon_from_y, cfg["scale"], see=False, save=True, wandb_log=True, wandb_step=batch_no, name=all_test_losses[-1] if len(all_test_losses)>0 else "-", render_grid=False, metric_crop_border=cfg["scale"])
             #for j in range(2):
             #    see_irn_example(x, y, z, x_recon_from_y, see=False, save=False, name=all_test_losses[-1])
             epoch_prev_sample = epoch
         
-        if epoch - epoch_prev_save >= epochs_between_saves:
+        if epoch - epoch_prev_save >= cfg["epochs_between_saves"]:
             print(f"We are saving at {batch_no+1} batches, {epoch} epochs...")
             save_network(inn, optimizer, epoch, min_training_loss, all_test_losses, all_test_psnr_y, f"{round(epoch, 2)}_{round(all_test_losses[-1], 2) if len(all_test_losses)>0 else '-'}_{run_name}")
             print(f"Finished saving.")
             epoch_prev_save = epoch
 
-        if epoch - epoch_prev_test >= epochs_between_tests:
+        if epoch - epoch_prev_test >= cfg["epochs_between_tests"]:
             print(f"At {batch_no} batches (epoch {epoch}):")
             print(f'loss_recon={loss_recon}, loss_guide={loss_guide}, loss_distr={loss_distr}')
-            print(f'In test dataset, in last {epochs_between_tests if epoch>0 else 0} epochs:')
+            print(f'In test dataset, in last {cfg["epochs_between_tests"] if epoch>0 else 0} epochs:')
 
             # Crop the border of test images by the resize scale to avoid capturing outliers (this is done in the IRN paper)
-            test_loss, test_psnr_rgb, test_psnr_y, test_ssim_RGB, test_ssim_Y, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, scale, lambda_recon, lambda_guide, lambda_distr, metric_crop_border=scale, fast_gpu_testing=fast_gpu_testing, mean_losses=mean_losses, quantize_recon=quantize_recon_loss)
+            test_loss, test_psnr_rgb, test_psnr_y, test_ssim_RGB, test_ssim_Y, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, cfg["scale"], cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], metric_crop_border=cfg["scale"], fast_gpu_testing=cfg["fast_gpu_testing"], mean_losses=cfg["mean_losses"], quantize_recon=cfg["quantize_recon_loss"])
             all_test_losses.append(test_loss)
             all_test_psnr_y.append(test_psnr_y)
             print("")
@@ -270,7 +262,7 @@ def train_inn(inn, dataloaders: DataLoaders,
         stop = timer()
         time_backward += stop - start
 
-        torch.nn.utils.clip_grad_norm_(inn.parameters(), max_norm=grad_clipping)
+        torch.nn.utils.clip_grad_norm_(inn.parameters(), max_norm=cfg["grad_clipping"])
         optimizer.step()
         scheduler.step()
         batch_no+=1
@@ -279,11 +271,23 @@ def train_inn(inn, dataloaders: DataLoaders,
 
 ####    EXECUTION CODE    ####
 if __name__ == '__main__':
-    resume_latest_run = False
-    resume_run_id = ""
-    resume_file_name = "" # optional
 
-    #os.environ['CUDA_LAUNCH_BLOCKING'] = str(1)
+    #os.environ['CUDA_LAUNCH_BLOCKING'] = str(1) # for debugging purposes
+    parser = ArgumentParser()
+    parser.add_argument("config", help=".yaml file containing model and train/test options")
+    parser.add_argument("-r", "--run_id", dest="run_id", help="id of the wandb run to resume")
+    parser.add_argument("-f", "--resume_file", dest="resume_file", help="path to specific saved_model file to resume")
+    parser.add_argument("-l", "--resume_latest_run", dest="resume_latest_run", action="store_true", default=False, help="resume latest wandb run")
+    args = parser.parse_args()
+    print(f"Launched with arguments: {args}")
+
+    configyaml = ""
+    if args.config:
+        configyaml = config_loader.load_config(args.config)
+
+    resume_latest_run = args.resume_latest_run
+    resume_run_id = args.run_id
+    resume_file_name = args.resume_file # optional
 
     wandb.login()
     run = wandb.init(
@@ -291,42 +295,20 @@ if __name__ == '__main__':
         dir=".",
         resume=resume_latest_run if resume_latest_run else None,
         id=resume_run_id if resume_run_id else None,
-        config={
-            "batch_size": 16,
-            "lambda_recon": 1,
-            "lambda_guide": 16,
-            "lambda_distr": 1,
-            "initial_learning_rate": 0.0002,
-            "img_size": 144,
-            "scale": 4, # ds_count = log2(scale)
-            "inv_per_ds": 8,
-            "inv_first_level_extra": 0,
-            "inv_final_level_extra": 0,
-            "seed": 10,
-            "grad_clipping": 10,
-            "full_size_test_imgs": True,
-            "lr_batch_milestones": [100000, 200000, 300000, 400000],
-            "lr_gamma": 0.5,
-            "batchnorm": False,
-            "mean_losses": False,
-            "fast_gpu_testing": False, # gives slightly inaccurate but much faster test scores
-            "quantize_recon_loss": False
-    })
+        config=configyaml # this line necessary for running sweeps
+    )
     config = wandb.config
 
     torch.manual_seed(config.seed)
     random.seed(config.seed)
     np.random.seed(config.seed)
 
+
     # Load the data
     dataloaders = Div2KDataLoaders(config.batch_size, config.img_size, full_size_test_imgs=config.full_size_test_imgs, test_img_size_divisor=config.scale)
 
     # Load the network
-    ds_count = int(np.log2(config.scale))
-    assert(ds_count==np.log2(config.scale)), "Scale must be a power of 2."
-    inn = IRN(3, config.img_size, config.img_size, ds_count=ds_count,
-              inv_per_ds=config.inv_per_ds, inv_final_level_extra=config.inv_final_level_extra,
-              inv_first_level_extra=config.inv_first_level_extra, batchnorm=config["batchnorm"])
+    inn = IRN(3, config["img_size"], config["img_size"], cfg=config)
 
     if resume_file_name:
         load_checkpoint_path = latest_file_in_folder("./saved_models", resume_file_name)
@@ -338,15 +320,7 @@ if __name__ == '__main__':
         load_checkpoint_path = ""
 
     # Train the network
-    # TODO: replace all these parameters with a "config" param...
-    all_training_losses, all_test_losses = train_inn(inn, dataloaders,
-                                                    max_batches=-1, max_epochs=-1, target_loss=-1,
-                                                    epochs_between_tests=100, epochs_between_training_log=0.2, epochs_between_samples=25, epochs_between_saves=10, 
-                                                    learning_rate=config.initial_learning_rate, grad_clipping=config.grad_clipping, scale=config.scale,
-                                                    lambda_recon=config.lambda_recon, lambda_guide=config.lambda_guide, lambda_distr=config.lambda_distr,
-                                                    mean_losses=config.mean_losses, fast_gpu_testing=config.fast_gpu_testing, quantize_recon_loss=config.quantize_recon_loss,
-                                                    lr_batch_milestones=config.lr_batch_milestones, lr_gamma=config.lr_gamma,
-                                                    load_checkpoint_path=load_checkpoint_path, run_name=run.id)
-    #plt.savefig(f'output/test_loss_{int(time.time())}_{int(all_test_losses[-1])}', dpi=100)
+    all_training_losses, all_test_losses = train_inn(inn, dataloaders, cfg=config, load_checkpoint_path=load_checkpoint_path, run_name=run.id)
 
+    #plt.savefig(f'output/test_loss_{int(time.time())}_{int(all_test_losses[-1])}', dpi=100)
     run.finish()

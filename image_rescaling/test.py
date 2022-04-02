@@ -265,9 +265,7 @@ def get_saved_inn(path):
             "batchnorm": False
     }
 
-    ds_count = int(np.log2(config["scale"]))
-
-    inn = IRN(3, config["img_size"], config["img_size"], ds_count=ds_count,
+    inn = IRN(3, config["img_size"], config["img_size"], scale=config["scale"],
               inv_per_ds=config["inv_per_ds"], inv_final_level_extra=config["inv_final_level_extra"],
               inv_first_level_extra=config["inv_first_level_extra"], batchnorm=config["batchnorm"])
 

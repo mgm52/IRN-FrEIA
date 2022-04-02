@@ -1,8 +1,9 @@
-from math import floor
+from math import floor, log2
 import time
 from tokenize import Double
 from FrEIA.modules.reshapes import HaarDownsampling
 from FrEIA.modules.invertible_resnet import ActNorm
+from gevent import config
 from .freia_custom_coupling import AffineCouplingOneSidedIRN, EnhancedCouplingOneSidedIRN
 from bicubic_pytorch.core import imresize
 from data import mnist8_iterator
@@ -13,6 +14,7 @@ from typing import Iterable, Tuple, List
 import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
+import config_loader
 from dblock import db_subnet
 from data2 import DataLoaders
 
@@ -78,15 +80,20 @@ class BatchnormSequenceINN(ff.SequenceINN):
 # dims          is in (c, w, h) format
 # inn x         is in [(n, c, w, h), (n, c, w, h), ...] format
 # inn output    is in [(n, c, w, h), (n, c, w, h), ...] format
-def IRN(*dims, ds_count=1, inv_per_ds=1, inv_final_level_extra=0, inv_first_level_extra=0, batchnorm=False):
+def IRN(*dims, cfg):
+    config_loader.check_keys(cfg, ["scale", "inv_per_ds", "inv_final_level_extra", "inv_first_level_extra", "batchnorm"])
+
+    ds_count = int(log2(cfg["scale"]))
+    assert ds_count == log2(cfg["scale"]), f"IRN scale must be a power of 2 (was given scale={cfg['scale']})"
+
     # SequenceINN takes dims in (c, w, h) format
-    inn = BatchnormSequenceINN(*dims) if batchnorm else ff.SequenceINN(*dims)
+    inn = BatchnormSequenceINN(*dims) if cfg["batchnorm"] else ff.SequenceINN(*dims)
 
     for d in range(ds_count):
         inn.append(HaarDownsampling, order_by_wavelet=True)
-        inv_count = inv_per_ds
-        if d==0: inv_count += inv_first_level_extra
-        elif d==ds_count-1: inv_count += inv_final_level_extra
+        inv_count = cfg["inv_per_ds"]
+        if d==0: inv_count += cfg["inv_first_level_extra"]
+        elif d==ds_count-1: inv_count += cfg["inv_final_level_extra"]
         for i in range(inv_count):
             inn.append(EnhancedCouplingOneSidedIRN, subnet_constructor=db_subnet)
     return inn.cuda() if device=="cuda" else inn
@@ -132,7 +139,7 @@ def sample_inn(inn, x: torch.Tensor, batchnorm=False):
 
     y_and_z, jac = inn([x])
     y, z = y_and_z[:, :3], y_and_z[:, 3:]
-    #y = quantize_ste(y)
+    y = quantize_ste(y)
 
     # If y conforms to a standard normal dist, which we will try to force it to, we would have mean_y=0 and std_y=1
     if batchnorm:

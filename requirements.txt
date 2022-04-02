@@ -16,3 +16,5 @@ git+https://github.com/VLL-HD/FrEIA.git
 git+https://github.com/mgm52/torchSR.git
 
 opencv-python
+
+pyyaml
