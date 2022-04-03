@@ -105,6 +105,8 @@ def get_test_dataloader(path, test_img_size_divisor=1, img_crop_size=None):
 def Div2KDataLoaders(batch_size, img_size=64, shuffle_training_data=True, full_size_test_imgs=False, test_img_size_divisor=2):
     #training_data = Div2K(root="./data", scale=4, split="train", track="bicubic", transform=ToTensor(), download=False)
     #testing_data = Div2K(root="./data", scale=8, split="test", track="bicubic", transform=ToTensor(), download=False)
+    print(f"Loading div2k data with imgsize={img_size}, shuffle={shuffle_training_data}, fullsizetest={full_size_test_imgs}, testsizedivisor={test_img_size_divisor}")
+    
     transform = transforms.Compose([
         transforms.RandomCrop(img_size),
         transforms.RandomHorizontalFlip(p=0.5),
