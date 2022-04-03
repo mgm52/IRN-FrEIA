@@ -3,7 +3,6 @@ import time
 from tokenize import Double
 from FrEIA.modules.reshapes import HaarDownsampling
 from FrEIA.modules.invertible_resnet import ActNorm
-from gevent import config
 from .freia_custom_coupling import AffineCouplingOneSidedIRN, EnhancedCouplingOneSidedIRN
 from bicubic_pytorch.core import imresize
 from data import mnist8_iterator
