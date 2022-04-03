@@ -123,6 +123,8 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
         "lr_batch_milestones", "lr_gamma"
     ])
 
+    print(f"About to train model: {inn}")
+
     optimizer = torch.optim.Adam(inn.parameters(), lr=cfg["initial_learning_rate"], weight_decay=0.00001, amsgrad=False)
     
     if(load_checkpoint_path):
@@ -299,9 +301,9 @@ if __name__ == '__main__':
     )
     config = wandb.config
 
-    torch.manual_seed(config.seed)
-    random.seed(config.seed)
-    np.random.seed(config.seed)
+    torch.manual_seed(config["seed"])
+    random.seed(config["seed"])
+    np.random.seed(config["seed"])
 
 
     # Load the data
