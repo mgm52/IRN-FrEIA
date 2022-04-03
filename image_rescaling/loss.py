@@ -10,7 +10,7 @@ def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_reco
     
     if quantize_recon: x_recon_quant = quantize_ste(x_recon_from_y)
     else: x_recon_quant = x_recon_from_y
-    loss_recon = F.l1_loss(x, x_recon_quant, reduction="sum")# + torch.abs(torch.std(x, axis=1) - torch.std(x_recon_from_y, axis=1)).mean()
+    loss_recon = torch.sum(torch.sqrt((x_recon_quant - x)**2 + 0.000001)) #F.l1_loss(x, x_recon_quant, reduction="sum")# + torch.abs(torch.std(x, axis=1) - torch.std(x_recon_from_y, axis=1)).mean()
     loss_recon = loss_recon / (x.numel() if mean_losses else x.shape[0])
 
     # Purpose of Loss_Guide: sensible downscaling
