@@ -210,7 +210,7 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
         stop = timer()
         time_loss += stop - start
 
-        if float(total_loss) > avg_training_loss and (len(recent_training_losses) == 0 or float(total_loss) > max(recent_training_losses)):
+        if float(total_loss) > avg_training_loss * 2 and (len(recent_training_losses) == 0 or float(total_loss) > max(recent_training_losses)):
             print(f"{total_loss} is new highest loss in recent set...")
             x_and_xrecon_and_diff_imgs = list(x.cpu().detach()) + list(x_recon_from_y.cpu().detach()) + list(torch.abs(x_recon_from_y-x).cpu().detach())
             plt_titles = []

@@ -80,7 +80,7 @@ class BatchnormSequenceINN(ff.SequenceINN):
 # inn x         is in [(n, c, w, h), (n, c, w, h), ...] format
 # inn output    is in [(n, c, w, h), (n, c, w, h), ...] format
 def IRN(*dims, cfg):
-    config_loader.check_keys(cfg, ["scale", "inv_per_ds", "inv_final_level_extra", "inv_first_level_extra", "batchnorm"])
+    config_loader.check_keys(cfg, ["scale", "actnorm", "inv_per_ds", "inv_final_level_extra", "inv_first_level_extra", "batchnorm"])
 
     ds_count = int(log2(cfg["scale"]))
     assert ds_count == log2(cfg["scale"]), f"IRN scale must be a power of 2 (was given scale={cfg['scale']})"
@@ -95,6 +95,7 @@ def IRN(*dims, cfg):
         elif d==ds_count-1: inv_count += cfg["inv_final_level_extra"]
         for i in range(inv_count):
             inn.append(EnhancedCouplingOneSidedIRN, subnet_constructor=db_subnet)
+            if cfg["actnorm"]: inn.append(ActNorm)
     return inn.cuda() if device=="cuda" else inn
 
 def standardise_tensor(x: torch.Tensor, new_mean=0, new_std=1):
