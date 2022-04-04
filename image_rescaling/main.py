@@ -117,7 +117,7 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
     [
         "max_batches", "max_epochs", "target_loss",
         "epochs_between_tests", "epochs_between_training_log", "epochs_between_samples", "epochs_between_saves",
-        "initial_learning_rate", "grad_clipping", "scale",
+        "initial_learning_rate", "grad_clipping", "grad_value_clipping", "scale",
         "lambda_recon", "lambda_guide", "lambda_distr",
         "mean_losses", "fast_gpu_testing", "quantize_recon_loss",
         "lr_batch_milestones", "lr_gamma"
@@ -223,9 +223,9 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
                 plt_titles.append(basics)
             see_multiple_imgs(x_and_xrecon_and_diff_imgs, 3, 16, row_titles=[f"lr, lg, ld, lt: {(float(loss_recon), float(loss_guide), float(loss_distr), float(total_loss))}.\nxmin={x.min()} ymim={y.min()} reconmin={x_recon_from_y.min()}\n\n\n\n"], plot_titles=plt_titles, see=False, save=True, filename=f"{run_name}_{int(time.time())}_{batch_no}_{int(total_loss)}", smallSize=False)
 
-        if batch_no % 5 == 0:
+        if False and batch_no % 5 == 0:
             with torch.no_grad():
-                blacksquare = torch.zeros(1, 3, 144, 144)
+                blacksquare = torch.zeros(1, 3, x.shape[-1], x.shape[-1])
                 blacksquare, bs_y, bs_z, bs_x_recon_from_y, bs_mean_y, bs_std_y = sample_inn(inn, blacksquare)
                 bsloss_recon, bsloss_guide, bsloss_distr, bsloss_batchnorm, bstotal_loss = calculate_irn_loss(cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], blacksquare, bs_y, bs_z, bs_x_recon_from_y, cfg["scale"], bs_mean_y, bs_std_y, mean_losses=cfg["mean_losses"], quantize_recon=cfg["quantize_recon_loss"])
 
@@ -288,7 +288,11 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
         stop = timer()
         time_backward += stop - start
 
-        torch.nn.utils.clip_grad_norm_(inn.parameters(), max_norm=cfg["grad_clipping"])
+        if cfg["grad_value_clipping"]:
+            torch.nn.utils.clip_grad_value_(inn.parameters(), clip_value=cfg["grad_value_clipping"])
+        if cfg["grad_clipping"]:
+            torch.nn.utils.clip_grad_norm_(inn.parameters(), max_norm=cfg["grad_clipping"])
+
         optimizer.step()
         scheduler.step()
         batch_no+=1

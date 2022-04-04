@@ -4,20 +4,21 @@ inv_per_ds: 8
 inv_first_level_extra: 0
 inv_final_level_extra: 0
 batchnorm: False
-img_size: 144
+img_size: 160
 actnorm: False
 
 # Training
 batch_size: 16
 lambda_recon: 1
-lambda_guide: 16
-lambda_distr: 1
-initial_learning_rate: 0.0002
+lambda_guide: 0.05
+lambda_distr: 0.00001
+initial_learning_rate: 0.00025
 seed: 10
-grad_clipping: 2
-lr_batch_milestones: [100000, 200000, 300000, 400000]
+grad_clipping: 100
+grad_value_clipping: 5
+lr_batch_milestones: [100000, 200000, 300000, 400000, 450000]
 lr_gamma: 0.5
-mean_losses: False
+mean_losses: True
 quantize_recon_loss: False
 quantize_guide_loss: False # currently not used
 

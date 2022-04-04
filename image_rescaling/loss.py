@@ -18,9 +18,12 @@ def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_reco
         # --> for this reason L2 should be better at reducing PSNR than L1
         # [Param] Funnily enough, previous work shows that L1 often produces higher PSNR. See table 1 https://arxiv.org/pdf/1511.08861.pdf
         # [Param] What you need is probably a smoothed L1 (see discussion in .md file)
-    x_downscaled = imresize(x, scale=1.0/scale) #quantize_ste(imresize(x, scale=1.0/scale))
-    loss_guide = F.mse_loss(x_downscaled, y, reduction="sum")
-    loss_guide = loss_guide / (y.numel() if mean_losses else y.shape[0])
+    if lambda_guide != 0:
+        x_downscaled = imresize(x, scale=1.0/scale) #quantize_ste(imresize(x, scale=1.0/scale))
+        loss_guide = F.mse_loss(x_downscaled, y, reduction="sum")
+        loss_guide = loss_guide / (y.numel() if mean_losses else y.shape[0])
+    else:
+        loss_guide = 0
 
     # Purpose of Loss_Distribution_Match_Surrogate:
         # Encouraging the model to always produce things that look like the OG dataset, even when it doesn't know what to do?
