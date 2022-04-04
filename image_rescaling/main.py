@@ -210,6 +210,30 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
         stop = timer()
         time_loss += stop - start
 
+        if float(total_loss) > avg_training_loss and (len(recent_training_losses) == 0 or float(total_loss) > max(recent_training_losses)):
+            print(f"{total_loss} is new highest loss in recent set...")
+            x_and_xrecon_and_diff_imgs = list(x.cpu().detach()) + list(x_recon_from_y.cpu().detach()) + list(torch.abs(x_recon_from_y-x).cpu().detach())
+            plt_titles = []
+            for xi in range(len(x_and_xrecon_and_diff_imgs)):
+                img = x_and_xrecon_and_diff_imgs[xi]
+
+                basics = f"min {round(float(img.min()), 2)} \nmax {round(float(img.max()), 2)} \nmean {round(float(img.mean()), 2)} \nsum {round(float(img.sum()), 2)}"
+                if xi < x.shape[0]:
+                    basics += f" \ndistr mean={float(z[xi].mean())} \ndistr loss={float((z[xi]**2).sum())}"
+                plt_titles.append(basics)
+            see_multiple_imgs(x_and_xrecon_and_diff_imgs, 3, 16, row_titles=[f"lr, lg, ld, lt: {(float(loss_recon), float(loss_guide), float(loss_distr), float(total_loss))}.\nxmin={x.min()} ymim={y.min()} reconmin={x_recon_from_y.min()}\n\n\n\n"], plot_titles=plt_titles, see=False, save=True, filename=f"{run_name}_{int(time.time())}_{batch_no}_{int(total_loss)}", smallSize=False)
+
+        if batch_no % 5 == 0:
+            with torch.no_grad():
+                blacksquare = torch.zeros(1, 3, 144, 144)
+                blacksquare, bs_y, bs_z, bs_x_recon_from_y, bs_mean_y, bs_std_y = sample_inn(inn, blacksquare)
+                bsloss_recon, bsloss_guide, bsloss_distr, bsloss_batchnorm, bstotal_loss = calculate_irn_loss(cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], blacksquare, bs_y, bs_z, bs_x_recon_from_y, cfg["scale"], bs_mean_y, bs_std_y, mean_losses=cfg["mean_losses"], quantize_recon=cfg["quantize_recon_loss"])
+
+                see_multiple_imgs([blacksquare[0].cpu().detach(), imresize(bs_y[0].cpu().detach(), 4), bs_x_recon_from_y[0].cpu().detach()], 1, 3,
+                                   row_titles=[f"lr, lg, ld, lt: {(float(bsloss_recon), float(bsloss_guide), float(bsloss_distr), float(bstotal_loss))}. \nreconmin={float(bs_x_recon_from_y.min())}, reconmax={float(bs_x_recon_from_y.max())}\n\n\n\n"],
+                                   plot_titles=["x", "y", "x_recon"], see=False, save=True, filename=f"bs_{run_name}_{int(time.time())}_{batch_no}_{int(bstotal_loss)}",
+                                   smallSize=False)
+
         recent_training_losses.append(float(total_loss))
 
         samples = batch_no * dataloaders.train_dataloader.batch_size

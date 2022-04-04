@@ -3,6 +3,7 @@ from matplotlib.figure import Figure
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+import torch
 from sklearn.datasets import make_moons
 from sklearn.datasets import load_digits
 
@@ -84,6 +85,8 @@ def see_multiple_imgs(imgs, rows, cols, row_titles=[], plot_titles=[], see=True,
             # Add title to row
             if row_num-1<len(row_titles): row_ax.set_title(row_titles[row_num-1] + "\n", fontsize=14, loc="left")
             row_ax.axis('off')
+    elif rows==1 and len(row_titles)==1:
+        plt.title(row_titles[0])
 
     maximgsize = max(imgs[0].shape)
 
@@ -96,7 +99,7 @@ def see_multiple_imgs(imgs, rows, cols, row_titles=[], plot_titles=[], see=True,
                 imgs[i-1] = imgs[i-1][0]
             if imgs[i-1].shape[0] == 3:
                 imgs[i-1] = imgs[i-1].permute(1, 2, 0)
-            ax.imshow(imgs[i-1])
+            ax.imshow(torch.clamp(imgs[i-1].cpu(), 0, 1))
         ax.axis('off')
 
     plt.tight_layout()

@@ -138,15 +138,16 @@ def sample_inn(inn, x: torch.Tensor, batchnorm=False):
 
     y_and_z, jac = inn([x])
     y, z = y_and_z[:, :3], y_and_z[:, 3:]
-    y = quantize_ste(y)
+    y_quant = quantize_ste(y)
 
     # If y conforms to a standard normal dist, which we will try to force it to, we would have mean_y=0 and std_y=1
     if batchnorm:
         y_printable, mean_y, std_y = standardise_tensor(y.clone(), mean, std)
+        y_printable = quantize_ste(y_printable)
     else:
         mean_y, std_y = None, None
 
-    ### To simulate real use of the network, I shouldn't refer to x after this point. We must assume that we are reconstructing from y_printable ONLY.
+    ### To simulate real use of the network, I shouldn't refer to x and y after this point. We must assume that we are reconstructing from y_quant ONLY.
     ### However -> I also extract mean_y and std_y during *training only*.
 
     # y_and_z.shape == (n, c2, w2, h2)
@@ -162,7 +163,7 @@ def sample_inn(inn, x: torch.Tensor, batchnorm=False):
         y_unprintable, _, _ = standardise_tensor(y_printable.clone(), 0, 1)
         y_and_z_sample = torch.cat((y_unprintable, z_sample), dim=1)
     else:
-        y_and_z_sample = torch.cat((y, z_sample), dim=1)
+        y_and_z_sample = torch.cat((y_quant, z_sample), dim=1)
     # y_and_z_sample.shape == (n, c2, w2, h2)
     x_recon_from_y, _ = inn([y_and_z_sample], rev=True)
     # x_recon_from_y.shape == (n, 3, w1, h1)        

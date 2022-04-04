@@ -30,8 +30,11 @@ def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_reco
     # Paper describes this as: -1 * sum [prob(x from dataset) * log2(prob(z in our normal dist))]
     # Because prob(x from dataset) is a constant: we have -1 * log2(prob(z in our normal dist))
     # Because surprisal in a standard normal dist is O(x^2): we have z^2
-    loss_distr = (z**2).sum()
-    loss_distr = loss_distr / (z.numel() if mean_losses else z.shape[0])
+    if lambda_distr != 0:
+        loss_distr = (z**2).sum()
+        loss_distr = loss_distr / (z.numel() if mean_losses else z.shape[0])
+    else:
+        loss_distr = 0
 
     if batchnorm: loss_batchnorm = torch.abs(mean_y) + torch.abs(1 - std_y)
     else: loss_batchnorm = 0
