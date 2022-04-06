@@ -155,6 +155,9 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
     epoch_prev_sample = epoch-1
     epoch_prev_save = epoch-1
 
+    epochs_between_spikeimg = 100
+    epoch_prev_spikeimg = epoch-epochs_between_spikeimg
+
     train_iter = iter(dataloaders.train_dataloader)
 
     start_ep = timer()
@@ -210,8 +213,15 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
         stop = timer()
         time_loss += stop - start
 
-        if float(total_loss) > avg_training_loss * 2 and (len(recent_training_losses) == 0 or float(total_loss) > max(recent_training_losses)):
-            print(f"{total_loss} is new highest loss in recent set...")
+        recent_training_losses.append(float(total_loss))
+
+        samples = batch_no * dataloaders.train_dataloader.batch_size
+        epoch = float(samples / dataloaders.train_len)
+
+        start = timer()
+
+        if (epoch - epoch_prev_spikeimg) >= epochs_between_spikeimg and float(total_loss) > avg_training_loss * 5:
+            print(f"{total_loss} is over 5x higher than recent avg loss...")
             x_and_xrecon_and_diff_imgs = list(x.cpu().detach()) + list(x_recon_from_y.cpu().detach()) + list(torch.abs(x_recon_from_y-x).cpu().detach())
             plt_titles = []
             for xi in range(len(x_and_xrecon_and_diff_imgs)):
@@ -234,12 +244,6 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
                                    plot_titles=["x", "y", "x_recon"], see=False, save=True, filename=f"bs_{run_name}_{int(time.time())}_{batch_no}_{int(bstotal_loss)}",
                                    smallSize=False)
 
-        recent_training_losses.append(float(total_loss))
-
-        samples = batch_no * dataloaders.train_dataloader.batch_size
-        epoch = float(samples / dataloaders.train_len)
-
-        start = timer()
         if epoch - epoch_prev_training_log >= cfg["epochs_between_training_log"]:
             avg_training_loss = sum(recent_training_losses) / len(recent_training_losses)
             min_training_loss = min([min_training_loss, avg_training_loss])
