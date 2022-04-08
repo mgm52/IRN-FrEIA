@@ -46,6 +46,7 @@ DISS
 - Projects from previous years https://www.cl.cam.ac.uk/teaching/projects/overseers/archive.html
   - Mukul's: https://www.cl.cam.ac.uk/teaching/projects/archive/2020/msr45-dissertation.pdf
   - Melissa's: https://www.cl.cam.ac.uk/teaching/projects/archive/2021/my364-dissertation.pdf
+  - Maximilian's: https://www.cl.cam.ac.uk/teaching/projects/archive/2021/mc2124-dissertation.pdf
 
 HPC
 - CSD3 application form 	https://www.hpc.cam.ac.uk/rcs-application
