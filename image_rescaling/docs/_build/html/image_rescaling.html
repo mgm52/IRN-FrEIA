@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>image_rescaling package &mdash; IRN-FrEIA  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="image_rescaling.bicubic_pytorch package" href="image_rescaling.bicubic_pytorch.html" />
+    <link rel="prev" title="DISSERTATION" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> IRN-FrEIA
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">DISSERTATION</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">image_rescaling package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="image_rescaling.bicubic_pytorch.html">image_rescaling.bicubic_pytorch package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_rescaling.networks.html">image_rescaling.networks package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_rescaling.tests.html">image_rescaling.tests package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-image_rescaling.config_loader">image_rescaling.config_loader module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#image-rescaling-data-module">image_rescaling.data module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#image-rescaling-loss-module">image_rescaling.loss module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#image-rescaling-main-module">image_rescaling.main module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-image_rescaling.network_saving">image_rescaling.network_saving module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#image-rescaling-test-module">image_rescaling.test module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-image_rescaling.utils">image_rescaling.utils module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-image_rescaling.visualize">image_rescaling.visualize module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-image_rescaling">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">IRN-FrEIA</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">DISSERTATION</a> &raquo;</li>
+      <li>image_rescaling package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/image_rescaling.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="image-rescaling-package">
+<h1>image_rescaling package<a class="headerlink" href="#image-rescaling-package" title="Permalink to this headline"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="image_rescaling.bicubic_pytorch.html">image_rescaling.bicubic_pytorch package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="image_rescaling.bicubic_pytorch.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image_rescaling.bicubic_pytorch.html#module-image_rescaling.bicubic_pytorch.core">image_rescaling.bicubic_pytorch.core module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image_rescaling.bicubic_pytorch.html#module-image_rescaling.bicubic_pytorch">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="image_rescaling.networks.html">image_rescaling.networks package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="image_rescaling.networks.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image_rescaling.networks.html#image-rescaling-networks-batchnorm-seq-module">image_rescaling.networks.batchnorm_seq module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image_rescaling.networks.html#module-image_rescaling.networks.coupling">image_rescaling.networks.coupling module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image_rescaling.networks.html#module-image_rescaling.networks.dense_block">image_rescaling.networks.dense_block module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image_rescaling.networks.html#image-rescaling-networks-invertible-rescaling-network-module">image_rescaling.networks.invertible_rescaling_network module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image_rescaling.networks.html#module-image_rescaling.networks.straight_through_estimator">image_rescaling.networks.straight_through_estimator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image_rescaling.networks.html#module-image_rescaling.networks">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="image_rescaling.tests.html">image_rescaling.tests package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="image_rescaling.tests.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image_rescaling.tests.html#image-rescaling-tests-resize-test-module">image_rescaling.tests.resize_test module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image_rescaling.tests.html#module-image_rescaling.tests.ssim_test">image_rescaling.tests.ssim_test module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image_rescaling.tests.html#image-rescaling-tests-ychannel-test-module">image_rescaling.tests.ychannel_test module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image_rescaling.tests.html#module-image_rescaling.tests">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline"></a></h2>
+</section>
+<section id="module-image_rescaling.config_loader">
+<span id="image-rescaling-config-loader-module"></span><h2>image_rescaling.config_loader module<a class="headerlink" href="#module-image_rescaling.config_loader" title="Permalink to this headline"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="image_rescaling.config_loader.check_keys">
+<span class="sig-prename descclassname"><span class="pre">image_rescaling.config_loader.</span></span><span class="sig-name descname"><span class="pre">check_keys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keys</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.config_loader.check_keys" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="image_rescaling.config_loader.load_config">
+<span class="sig-prename descclassname"><span class="pre">image_rescaling.config_loader.</span></span><span class="sig-name descname"><span class="pre">load_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg_filename</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.config_loader.load_config" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="image-rescaling-data-module">
+<h2>image_rescaling.data module<a class="headerlink" href="#image-rescaling-data-module" title="Permalink to this headline"></a></h2>
+</section>
+<section id="image-rescaling-loss-module">
+<h2>image_rescaling.loss module<a class="headerlink" href="#image-rescaling-loss-module" title="Permalink to this headline"></a></h2>
+</section>
+<section id="image-rescaling-main-module">
+<h2>image_rescaling.main module<a class="headerlink" href="#image-rescaling-main-module" title="Permalink to this headline"></a></h2>
+</section>
+<section id="module-image_rescaling.network_saving">
+<span id="image-rescaling-network-saving-module"></span><h2>image_rescaling.network_saving module<a class="headerlink" href="#module-image_rescaling.network_saving" title="Permalink to this headline"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="image_rescaling.network_saving.load_network">
+<span class="sig-prename descclassname"><span class="pre">image_rescaling.network_saving.</span></span><span class="sig-name descname"><span class="pre">load_network</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.network_saving.load_network" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="image_rescaling.network_saving.save_network">
+<span class="sig-prename descclassname"><span class="pre">image_rescaling.network_saving.</span></span><span class="sig-name descname"><span class="pre">save_network</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_training_loss</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_test_losses</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_test_psnr_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.network_saving.save_network" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="image-rescaling-test-module">
+<h2>image_rescaling.test module<a class="headerlink" href="#image-rescaling-test-module" title="Permalink to this headline"></a></h2>
+</section>
+<section id="module-image_rescaling.utils">
+<span id="image-rescaling-utils-module"></span><h2>image_rescaling.utils module<a class="headerlink" href="#module-image_rescaling.utils" title="Permalink to this headline"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="image_rescaling.utils.standardise_tensor">
+<span class="sig-prename descclassname"><span class="pre">image_rescaling.utils.</span></span><span class="sig-name descname"><span class="pre">standardise_tensor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.utils.standardise_tensor" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-image_rescaling.visualize">
+<span id="image-rescaling-visualize-module"></span><h2>image_rescaling.visualize module<a class="headerlink" href="#module-image_rescaling.visualize" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="image_rescaling.visualize.mnist8_iterator">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">image_rescaling.visualize.</span></span><span class="sig-name descname"><span class="pre">mnist8_iterator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shuffle_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.visualize.mnist8_iterator" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="image_rescaling.visualize.mnist8_iterator.iterate_mnist8_imgs">
+<span class="sig-name descname"><span class="pre">iterate_mnist8_imgs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_test_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.visualize.mnist8_iterator.iterate_mnist8_imgs" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="image_rescaling.visualize.process_div2k_img">
+<span class="sig-prename descclassname"><span class="pre">image_rescaling.visualize.</span></span><span class="sig-name descname"><span class="pre">process_div2k_img</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.visualize.process_div2k_img" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="image_rescaling.visualize.process_xbit_img">
+<span class="sig-prename descclassname"><span class="pre">image_rescaling.visualize.</span></span><span class="sig-name descname"><span class="pre">process_xbit_img</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">floor_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.visualize.process_xbit_img" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="image_rescaling.visualize.see_multiple_imgs">
+<span class="sig-prename descclassname"><span class="pre">image_rescaling.visualize.</span></span><span class="sig-name descname"><span class="pre">see_multiple_imgs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imgs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rows</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">row_titles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_titles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">see</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'out'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smallSize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.visualize.see_multiple_imgs" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-image_rescaling">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-image_rescaling" title="Permalink to this headline"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="DISSERTATION" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="image_rescaling.bicubic_pytorch.html" class="btn btn-neutral float-right" title="image_rescaling.bicubic_pytorch package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, mgm52.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

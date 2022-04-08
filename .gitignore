@@ -3,10 +3,11 @@
 /ignoring
 /mnist_generation/networks/__pycache__/*
 /mnist_generation/__pycache__
-/data
+/image_rescaling/data
 /wandb
-/output
-/saved_models
+/image_rescaling/wandb
+/image_rescaling/output
+/image_rescaling/saved_models
 /image_rescaling/wandb
 
 # Byte-compiled / optimized / DLL files

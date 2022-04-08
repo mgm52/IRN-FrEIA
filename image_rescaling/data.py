@@ -1,117 +1,129 @@
-# Get dataset
-from matplotlib.figure import Figure
-import numpy as np
-import matplotlib.pyplot as plt
-import random
+import os
+from typing import Any, Callable, Optional
+import torchvision.transforms.functional as TF
+from torch.utils.data import Dataset
+from torchvision import datasets
+from torchvision import transforms
+from torchsr.datasets import Div2K
+from torchsr.transforms import ToTensor
+from torch.utils.data import DataLoader
 import torch
-from sklearn.datasets import make_moons
-from sklearn.datasets import load_digits
+import matplotlib.pyplot as plt
+from bicubic_pytorch.core import imresize
+import numpy as np
+import math
 
-class mnist8_iterator:
-    def __init__(self, shuffle_data=True):
-        self.dataset, _ = load_digits(return_X_y=True)
-        if shuffle_data: np.random.shuffle(self.dataset)
+class DataLoaders:
+    def __init__(self, train_dataloader, test_dataloader, sample_shape):
+        self.train_dataloader: DataLoader = train_dataloader
+        self.test_dataloader: DataLoader = test_dataloader
+        self.train_len = len(self.train_dataloader.dataset)
+        self.test_len = len(self.test_dataloader.dataset)
+        self.sample_shape = sample_shape
 
-        self.current_train_epoch = -1
-        self.prev_train_index = -1
-        self.prev_test_index = -1
-    
-    def iterate_mnist8_imgs(self, count=1, use_test_data=False):
-        test_limit = np.ceil(len(self.dataset) * 0.9)
-        samples = []
-        for j in range(count):
-            if not use_test_data:
-                self.prev_train_index = (self.prev_train_index + 1) % test_limit
-                if self.prev_train_index==0:
-                    self.current_train_epoch += 1
-                    #if self.current_train_epoch % 10 == 0: print(f'Starting epoch {self.current_train_epoch} over data')
-                i = self.prev_train_index
-            else:
-                self.prev_test_index = (self.prev_test_index + 1) % (len(self.dataset) - test_limit)
-                i = test_limit + self.prev_test_index
+# The default datasets.ImageFolder class doesn't allow you to load a single class of images in a folder with multiple classes
+# This fixes that; classname should be the name of the folder within root that you want to load, or None to detect it automatically.
+class SingleClassImageFolder(datasets.ImageFolder):
+    def __init__(self, root, classname = None, transform = None):
+        self.classname = classname
+        super().__init__(root, transform)
 
-            data = np.array(self.dataset[int(i)])
-            samples.append(data)
-        return samples
+    def find_classes(self, directory: str):
+        print(f"Loading a single class file in {directory}...")
+        classes = [entry.name for entry in os.scandir(directory) if entry.is_dir()]
 
-def process_div2k_img(data, shape, verbose=False):
-    im = np.array(data.detach().cpu().numpy())
-    assert np.prod(shape) == np.size(im), f'process_xbit_img given a shape ({shape}) that doesnt match element count {np.size(im)} - expected {np.prod(shape)} elements instead'
+        if not classes:
+            raise FileNotFoundError(f"Couldn't find any class folder in {directory}.")
 
-    im.resize(*shape)
-    # Convert from (c, w, h) format to (w, h, c)
-    im = np.moveaxis(im, 0, -1)
+        if self.classname is None:
+            if len(classes) > 1:
+                raise FileNotFoundError(f"Multiple class folders found in {directory} but no classname was specified.")
+            return classes, {classes[0]: 0}
 
-    #im = im * scaling
+        if not (self.classname is None):
+            if not (self.classname in classes):
+                raise FileNotFoundError(f"Couldn't find class folder named '{self.classname}' in {directory}.")
+            return [self.classname], {self.classname: 0}
 
-    if verbose:
-        print(f"For shape {shape}:")
-        print(f'Max : {np.amax(im)}')
-        print(f'Med : {np.median(im)}')
-        print(f'Min : {np.amin(im)}')
+# Crops an image in the centre, in such a way that its height and width is a multiple of divisor
+# Expects image to be in shape (..., h, w)
+class DivisibleCrop(torch.nn.Module):
+    def __init__(self, divisor):
+        super().__init__()
+        assert(int(divisor)==divisor and divisor>0), "Invalid divisor provided for image size. Please provide a positive int."
+        self.divisor = divisor
 
-    im = np.clip(im, 0, 1)
+    def forward(self, img):
+        if torch.is_tensor(img):
+            h, w = img.shape[-2], img.shape[-1]
+        else:
+            w, h = img.size
 
-    return im
+        new_hw = (self.divisor*math.floor(h / self.divisor), self.divisor*math.floor(w / self.divisor))
+        return TF.center_crop(img, new_hw)
 
-def process_xbit_img(data, shape, clip_values=True, floor_values=True, bits=4, scaling=1):
-    im = np.array(data.detach().cpu().numpy())
-    assert np.prod(shape) == np.size(im), f'process_xbit_img given a shape ({shape}) that doesnt match element count {np.size(im)} - expected {np.prod(shape)} elements instead'
+    def __repr__(self):
+        return self.__class__.__name__ + '(divisor={0})'.format(self.divisor)
 
-    im.resize(*shape)
+# Crops an image in the centre, by a given border. Output image is of size (h-border*2, w-border*2).
+class BorderCrop(torch.nn.Module):
+    def __init__(self, border):
+        super().__init__()
+        assert(int(border)==border and border>=0), "Invalid border provided for image size. Please provide a non-negative int."
+        self.border = border
 
-    im = im * scaling
+    def forward(self, img):
+        if torch.is_tensor(img):
+            h, w = img.shape[-2], img.shape[-1]
+        else:
+            w, h = img.size
 
-    print(f"For shape {shape}:")
-    print(f'Max : {np.amax(im)}')
-    print(f'Med : {np.median(im)}')
-    print(f'Min : {np.amin(im)}')
+        new_hw = (h - self.border*2, w - self.border*2)
+        return TF.center_crop(img, new_hw)
 
-    max_color = pow(2, bits)
-    if clip_values: im = np.clip(im, 0, max_color)
-    if floor_values: im = np.floor(im)
+    def __repr__(self):
+        return self.__class__.__name__ + '(border={0})'.format(self.border)
 
-    return im
+def get_test_dataloader(path, test_img_size_divisor=1, img_crop_size=None):
+    classname = path[path.rfind("/")+1:]
+    direc = path[:path.rfind("/")]
 
-def see_multiple_imgs(imgs, rows, cols, row_titles=[], plot_titles=[], see=True, save=False, filename="out", smallSize=False):
-    if len(imgs)==0: return None
-    assert rows*cols >= len(imgs), f'Cannot print {len(imgs)} images on a {rows}x{cols} grid'
-    
-    f, axes = plt.subplots(figsize=(3*cols, 3*rows) , nrows=rows, ncols=1, sharey=True) 
-    f.set_dpi(200)
-
-    if rows > 1:
-        for row_num, row_ax in enumerate(axes, start=1):
-            # Add title to row
-            if row_num-1<len(row_titles): row_ax.set_title(row_titles[row_num-1] + "\n", fontsize=14, loc="left")
-            row_ax.axis('off')
-    elif rows==1 and len(row_titles)==1:
-        plt.title(row_titles[0])
-
-    maximgsize = max(imgs[0].shape)
-
-    for i in range(1, rows*cols + 1):
-        # Add subplot to index i-1 within a rows*cols grid
-        ax = f.add_subplot(rows,cols,i)
-        if i-1<len(plot_titles): ax.set_title(plot_titles[i-1], fontsize=int(9.0 + maximgsize * 2.0/100.0), loc="left")
-        if i-1<len(imgs) and not (imgs[i-1] is None):
-            if len(imgs[i-1].shape) == 4 and imgs[i-1].shape[0] == 1:
-                imgs[i-1] = imgs[i-1][0]
-            if imgs[i-1].shape[0] == 3:
-                imgs[i-1] = imgs[i-1].permute(1, 2, 0)
-            ax.imshow(torch.clamp(imgs[i-1].cpu(), 0, 1))
-        ax.axis('off')
-
-    plt.tight_layout()
-    if smallSize:
-        f.set_size_inches(cols * maximgsize * 0.5/256.0, rows * maximgsize * 0.6/256.0)
+    if img_crop_size is None:
+        transform = transforms.Compose([DivisibleCrop(test_img_size_divisor), transforms.ToTensor()])
+        dataset = SingleClassImageFolder(direc, classname=classname, transform=transform)
+        batch_size = 1
     else:
-        f.set_size_inches(cols * maximgsize * 7.5/256.0, rows * maximgsize * 9/256.0)
+        transform = transforms.Compose([transforms.CenterCrop(img_crop_size), transforms.ToTensor()])
+        dataset = SingleClassImageFolder(direc, classname=classname, transform=transform)
+        batch_size = len(dataset)
+    
+    return DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=6)
 
-    plt.axis("off")
 
-    if(save): plt.savefig(filename + '.png', dpi=200)
-    if(see): plt.show()
-    if(not see): plt.close()
+# NOTE: the paper crops full-sized test images by a border equal to the scaling factor being trained on (e.g. 2x).
+# I suppose this is because it believes the border pixels to be less accurate?
+def Div2KDataLoaders(batch_size, img_size=64, shuffle_training_data=True, full_size_test_imgs=False, test_img_size_divisor=2):
+    #training_data = Div2K(root="./data", scale=4, split="train", track="bicubic", transform=ToTensor(), download=False)
+    #testing_data = Div2K(root="./data", scale=8, split="test", track="bicubic", transform=ToTensor(), download=False)
+    print(f"Loading div2k data with imgsize={img_size}, shuffle={shuffle_training_data}, fullsizetest={full_size_test_imgs}, testsizedivisor={test_img_size_divisor}")
+    
+    transform = transforms.Compose([
+        transforms.RandomCrop(img_size),
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.RandomVerticalFlip(p=0.5),
+        transforms.RandomApply([transforms.RandomRotation((90, 90))], p=0.5),
+        transforms.ToTensor()
+    ])
+    dataset = SingleClassImageFolder("./data/DIV2K/DIV2K_train_HR", transform=transform)
+    train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle_training_data, num_workers=6)
+    print(f"Loaded {len(dataset)} training images")
 
-    return f
+    test_imgs_path = "./data/DIV2K/DIV2K_valid_HR"
+    if full_size_test_imgs:
+        test_dataloader = get_test_dataloader(test_imgs_path, test_img_size_divisor)
+    else:
+        test_dataloader = get_test_dataloader(test_imgs_path, img_crop_size=img_size)
+    print(f"Loaded {len(dataset)} test images")
+
+    return DataLoaders(train_dataloader, test_dataloader, sample_shape=(3, img_size, img_size))    
+

@@ -2,9 +2,9 @@
 from argparse import ArgumentParser
 import time
 from tracemalloc import start
-from networks.freia_invertible_rescaling import IRN, sample_inn
-from data import mnist8_iterator, process_xbit_img, see_multiple_imgs, process_div2k_img
-from data2 import Div2KDataLoaders, DataLoaders
+from networks.invertible_rescaling_network import IRN, sample_irn
+from visualize import mnist8_iterator, process_xbit_img, see_multiple_imgs, process_div2k_img
+from data import Div2KDataLoaders, DataLoaders
 from bicubic_pytorch.core import imresize
 import config_loader
 import torch
@@ -16,11 +16,13 @@ from test import test_inn
 from network_saving import save_network, load_network
 import math
 from timeit import default_timer as timer
+from utils import create_parent_dir
 import glob
 import os
 import config_loader
 import random
 from loss import calculate_irn_loss
+from datetime import date
 import matplotlib.pyplot as plt
 plt.rcParams["font.family"] = "serif"
 #from IQA_pytorch import SSIM, DISTS
@@ -37,7 +39,7 @@ def latest_file_in_folder(folder_path, file_ending=""):
     latest_file_path = max(glob.glob(f"{folder_path}/*{file_ending}"), key=os.path.getctime)
     return latest_file_path
 
-def see_irn_example(x, y, z, x_recon_from_y, scale, see=True, save=True, wandb_log=False, wandb_step=-1, name=0, render_grid=True, metric_crop_border=4):
+def see_irn_example(x, y, z, x_recon_from_y, scale, see=True, save=True, wandb_log=False, wandb_step=-1, img_name=0, render_grid=True, metric_crop_border=4, folder_name=None):
     print("-> About to visualize irn example")
     i = random.randint(0, len(x)-1)
 
@@ -45,6 +47,9 @@ def see_irn_example(x, y, z, x_recon_from_y, scale, see=True, save=True, wandb_l
     x_downscaled_bc = imresize(x[i], scale=1.0/scale)
     x_upscaled_bc = imresize(x_downscaled_bc, scale=scale)
 
+    current_date = date.today().strftime("%Y-%m-%d")
+    if not folder_name:
+        folder_name = current_date
 
     #div2k images are loaded with values in range [0, 1] but mnist8 is in range [0, 16].
     size = x.shape[-1]
@@ -72,6 +77,7 @@ def see_irn_example(x, y, z, x_recon_from_y, scale, see=True, save=True, wandb_l
     [ssim_irn_down, ssim_bi_up, ssim_irn_up] = [round(float(ssim_metric(torch.unsqueeze(pred_vs_goal[0], dim=0), torch.unsqueeze(pred_vs_goal[1], dim=0)).item()), 4) for pred_vs_goal in [
         (y[i], x_downscaled_bc), (x_upscaled_bc_cropped, x_cropped), (x_recon_from_y_cropped, x_cropped)]]
 
+    filename=f'output/training/{folder_name}/out_{int(time.time())}_{i}_{img_name}'
     if render_grid:
         fig = see_multiple_imgs(imgs, 2, 3,
             row_titles=[
@@ -82,7 +88,7 @@ def see_irn_example(x, y, z, x_recon_from_y, scale, see=True, save=True, wandb_l
                 "GT [HR] (∞)", f"Bi-down & Bi-up ({psnr_bi_up}/{ssim_bi_up})", f"IRN-down & IRN-up ({psnr_irn_up}/{ssim_irn_up})"
             ],
             see=see, save=save,
-            filename=f'output/out_{int(time.time())}_{i}_{name}'
+            filename=filename
         )
 
         if wandb_log:
@@ -92,10 +98,10 @@ def see_irn_example(x, y, z, x_recon_from_y, scale, see=True, save=True, wandb_l
         if save:
             file_names = ["HR", "Bi-down", f"IRN-down-{psnr_irn_down}-{ssim_irn_down}", f"Bi-down-Bi-up-{psnr_bi_up}-{ssim_bi_up}", f"IRN-down-IRN-up-{psnr_irn_up}-{ssim_irn_up}"]
             file_imgs = [x[i], x_downscaled_bc, y[i], x_upscaled_bc, x_recon_from_y]
-            filename_start = f'output/out_{int(time.time())}_{i}_{name}_'
 
             for fni in range(len(file_names)):
-                save_image(file_imgs[fni] / 1, filename_start + file_names[fni] + ".png")
+                create_parent_dir(filename)
+                save_image(file_imgs[fni] / 1, filename + "_" + file_names[fni] + ".png")
         if wandb_log:
             table = wandb.Table(columns=["Img name", "Img", "PSNR(RGB)", "SSIM"])
             table.add_data("GT [HR]", wandb.Image(imgs[0]), np.Infinity, 1)
@@ -204,12 +210,12 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
         time_dataloading += stop-start
 
         start = timer()
-        x, y, z, x_recon_from_y, mean_y, std_y = sample_inn(inn, x)
+        x, y, z, x_recon_from_y, mean_y, std_y = sample_irn(inn, x)
         stop = timer()
         time_forward += stop - start
 
         start = timer()
-        loss_recon, loss_guide, loss_distr, loss_batchnorm, total_loss = calculate_irn_loss(cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], x, y, z, x_recon_from_y, cfg["scale"], mean_y, std_y, mean_losses=cfg["mean_losses"], quantize_recon=cfg["quantize_recon_loss"])
+        loss_recon, loss_guide, loss_distr, loss_batchnorm, total_loss = calculate_irn_loss(cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], x, y, z, x_recon_from_y, mean_y, std_y, mean_losses=cfg["mean_losses"], quantize_recon=cfg["quantize_recon_loss"])
         stop = timer()
         time_loss += stop - start
 
@@ -220,8 +226,8 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
 
         start = timer()
 
-        if (epoch - epoch_prev_spikeimg) >= epochs_between_spikeimg and float(total_loss) > avg_training_loss * 5:
-            print(f"{total_loss} is over 5x higher than recent avg loss...")
+        if epoch > cfg["epochs_between_training_log"] * 1.5 and (epoch - epoch_prev_spikeimg) >= epochs_between_spikeimg and float(total_loss) > avg_training_loss * 5:
+            print(f"{total_loss} is over 5x higher than recent avg loss... (and over {epochs_between_spikeimg} epochs since last logged spike)")
             x_and_xrecon_and_diff_imgs = list(x.cpu().detach()) + list(x_recon_from_y.cpu().detach()) + list(torch.abs(x_recon_from_y-x).cpu().detach())
             plt_titles = []
             for xi in range(len(x_and_xrecon_and_diff_imgs)):
@@ -231,17 +237,19 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
                 if xi < x.shape[0]:
                     basics += f" \ndistr mean={float(z[xi].mean())} \ndistr loss={float((z[xi]**2).sum())}"
                 plt_titles.append(basics)
-            see_multiple_imgs(x_and_xrecon_and_diff_imgs, 3, 16, row_titles=[f"lr, lg, ld, lt: {(float(loss_recon), float(loss_guide), float(loss_distr), float(total_loss))}.\nxmin={x.min()} ymim={y.min()} reconmin={x_recon_from_y.min()}\n\n\n\n"], plot_titles=plt_titles, see=False, save=True, filename=f"{run_name}_{int(time.time())}_{batch_no}_{int(total_loss)}", smallSize=False)
+            see_multiple_imgs(x_and_xrecon_and_diff_imgs, 3, x.shape[0],
+                row_titles=[f"lr, lg, ld, lt: {(float(loss_recon), float(loss_guide), float(loss_distr), float(total_loss))}.\nxmin={x.min()} ymim={y.min()} reconmin={x_recon_from_y.min()}\n\n\n\n"],
+                plot_titles=plt_titles, see=False, save=True, filename=f"output/debug/{run_name}/{int(time.time())}_{batch_no}_{int(total_loss)}", smallSize=False)
 
         if False and batch_no % 5 == 0:
             with torch.no_grad():
                 blacksquare = torch.zeros(1, 3, x.shape[-1], x.shape[-1])
-                blacksquare, bs_y, bs_z, bs_x_recon_from_y, bs_mean_y, bs_std_y = sample_inn(inn, blacksquare)
-                bsloss_recon, bsloss_guide, bsloss_distr, bsloss_batchnorm, bstotal_loss = calculate_irn_loss(cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], blacksquare, bs_y, bs_z, bs_x_recon_from_y, cfg["scale"], bs_mean_y, bs_std_y, mean_losses=cfg["mean_losses"], quantize_recon=cfg["quantize_recon_loss"])
+                blacksquare, bs_y, bs_z, bs_x_recon_from_y, bs_mean_y, bs_std_y = sample_irn(inn, blacksquare)
+                bsloss_recon, bsloss_guide, bsloss_distr, bsloss_batchnorm, bstotal_loss = calculate_irn_loss(cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], blacksquare, bs_y, bs_z, bs_x_recon_from_y, bs_mean_y, bs_std_y, mean_losses=cfg["mean_losses"], quantize_recon=cfg["quantize_recon_loss"])
 
                 see_multiple_imgs([blacksquare[0].cpu().detach(), imresize(bs_y[0].cpu().detach(), 4), bs_x_recon_from_y[0].cpu().detach()], 1, 3,
                                    row_titles=[f"lr, lg, ld, lt: {(float(bsloss_recon), float(bsloss_guide), float(bsloss_distr), float(bstotal_loss))}. \nreconmin={float(bs_x_recon_from_y.min())}, reconmax={float(bs_x_recon_from_y.max())}\n\n\n\n"],
-                                   plot_titles=["x", "y", "x_recon"], see=False, save=True, filename=f"bs_{run_name}_{int(time.time())}_{batch_no}_{int(bstotal_loss)}",
+                                   plot_titles=["x", "y", "x_recon"], see=False, save=True, filename=f"output/debug/{run_name}/bs_{int(time.time())}_{batch_no}_{int(bstotal_loss)}",
                                    smallSize=False)
 
         if epoch - epoch_prev_training_log >= cfg["epochs_between_training_log"]:
@@ -258,8 +266,8 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
             print(f"We are sampling at {batch_no+1} batches, {epoch} epochs...")
             with torch.no_grad():
                 index_of_sample_image = 4
-                x, y, z, x_recon_from_y, mean_y, std_y = sample_inn(inn, dataloaders.test_dataloader.dataset[index_of_sample_image][0].unsqueeze(dim=0))
-            see_irn_example(x, y, z, x_recon_from_y, cfg["scale"], see=False, save=True, wandb_log=True, wandb_step=batch_no, name=all_test_losses[-1] if len(all_test_losses)>0 else "-", render_grid=False, metric_crop_border=cfg["scale"])
+                x, y, z, x_recon_from_y, mean_y, std_y = sample_irn(inn, dataloaders.test_dataloader.dataset[index_of_sample_image][0].unsqueeze(dim=0))
+            see_irn_example(x, y, z, x_recon_from_y, cfg["scale"], see=False, save=False, wandb_log=True, wandb_step=batch_no, img_name=all_test_losses[-1] if len(all_test_losses)>0 else "-", render_grid=False, metric_crop_border=cfg["scale"], folder_name=run_name)
             #for j in range(2):
             #    see_irn_example(x, y, z, x_recon_from_y, see=False, save=False, name=all_test_losses[-1])
             epoch_prev_sample = epoch
@@ -276,7 +284,7 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
             print(f'In test dataset, in last {cfg["epochs_between_tests"] if epoch>0 else 0} epochs:')
 
             # Crop the border of test images by the resize scale to avoid capturing outliers (this is done in the IRN paper)
-            test_loss, test_psnr_rgb, test_psnr_y, test_ssim_RGB, test_ssim_Y, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, cfg["scale"], cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], metric_crop_border=cfg["scale"], fast_gpu_testing=cfg["fast_gpu_testing"], mean_losses=cfg["mean_losses"], quantize_recon=cfg["quantize_recon_loss"])
+            test_loss, test_psnr_rgb, test_psnr_y, test_ssim_RGB, test_ssim_Y, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], metric_crop_border=cfg["scale"], fast_gpu_testing=cfg["fast_gpu_testing"], mean_losses=cfg["mean_losses"], quantize_recon=cfg["quantize_recon_loss"])
             all_test_losses.append(test_loss)
             all_test_psnr_y.append(test_psnr_y)
             print("")
@@ -356,5 +364,5 @@ if __name__ == '__main__':
     # Train the network
     all_training_losses, all_test_losses = train_inn(inn, dataloaders, cfg=config, load_checkpoint_path=load_checkpoint_path, run_name=run.id)
 
-    #plt.savefig(f'output/test_loss_{int(time.time())}_{int(all_test_losses[-1])}', dpi=100)
+    #plt.savefig(f'output/training/test_loss_{int(time.time())}_{int(all_test_losses[-1])}', dpi=100)
     run.finish()

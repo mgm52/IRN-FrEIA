@@ -1,9 +1,9 @@
 import time
 from tracemalloc import start
 from torchvision import transforms
-from networks.freia_invertible_rescaling import IRN, sample_inn
-from data import mnist8_iterator, process_xbit_img, see_multiple_imgs, process_div2k_img
-from data2 import Div2KDataLoaders, DataLoaders, get_test_dataloader
+from networks.invertible_rescaling_network import IRN, sample_irn, multi_sample_irn
+from visualize import mnist8_iterator, process_xbit_img, see_multiple_imgs, process_div2k_img
+from data import Div2KDataLoaders, DataLoaders, get_test_dataloader
 from bicubic_pytorch.core import imresize
 import torch
 from torchvision.utils import save_image
@@ -13,11 +13,13 @@ import wandb
 from network_saving import save_network, load_network
 import math
 from timeit import default_timer as timer
-from networks.freia_invertible_rescaling import quantize_ste
+from networks.invertible_rescaling_network import quantize_ste
 import glob
+from utils import create_parent_dir
 import os
 import random
 from loss import calculate_irn_loss
+from datetime import date
 import matplotlib.pyplot as plt
 plt.rcParams["font.family"] = "serif"
 
@@ -33,9 +35,9 @@ def rgb_to_y(rgb_imgs, round255=False, plus16=True, bgr=False):
     if round255: output = output.round()
     return output.unsqueeze(dim=1) / 255.0
 
-def get_test_function_irn(lambda_recon, lambda_guide, lambda_distr, scale, metric_crop_border, fast_gpu_testing=False, mean_losses=False, quantize_recon=False):
+def get_test_function_irn(lambda_recon, lambda_guide, lambda_distr, metric_crop_border, fast_gpu_testing=False, mean_losses=False, quantize_recon=False):
     def test_function_irn(x, y, z, x_recon_from_y, mean_y, std_y):
-        loss_recon, loss_guide, loss_distr, loss_batchnorm, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale, mean_y, std_y, batchnorm=False, mean_losses=mean_losses, quantize_recon=quantize_recon)
+        loss_recon, loss_guide, loss_distr, loss_batchnorm, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, mean_y, std_y, batchnorm=False, mean_losses=mean_losses, quantize_recon=quantize_recon)
 
         test_function_psnr_ssim = get_test_function_psnr_ssim(metric_crop_border, fast_gpu_testing=fast_gpu_testing)
         [psnr_RGB, psnr_Y, ssim_RGB, ssim_Y] = test_function_psnr_ssim(x, y, z, x_recon_from_y, mean_y, std_y)
@@ -94,7 +96,10 @@ def get_test_function_psnr_ssim(metric_crop_border, fast_gpu_testing=False):
     return test_function_psnr_ssim
 
 def get_sample_function_irn(inn):
-    return lambda x: sample_inn(inn, x.clone())
+    return lambda x: sample_irn(inn, x.clone())
+
+def get_multi_sample_function_irn(inn, num_applications, mid_quantization):
+    return lambda x: multi_sample_irn(inn, x.clone(), num_applications, mid_quantization)
 
 def get_sample_function_bicub(scale):
     def sample_function_bicub(x):
@@ -129,8 +134,12 @@ def get_sample_function_imgfolder(path, scale, img_size_divisor=1):
         return x, y, z, x_recon_from_y, mean_y, std_y
     return sample_function_imgfolder
 
-def test_rescaling(dataloaders, x_y_z_recon_mean_std_function, test_metrics_function, save_imgs=False):
+def test_rescaling(dataloaders, x_y_z_recon_mean_std_function, test_metrics_function, save_imgs=False, foldername=None):
     with torch.no_grad():
+        current_date = date.today().strftime("%Y-%m-%d")
+        if not foldername:
+            foldername = current_date
+
         max_test_batches = dataloaders.test_len / dataloaders.test_dataloader.batch_size
         assert(max_test_batches == int(max_test_batches)), f"Test batch size ({dataloaders.test_dataloader.batch_size}) does not fit into test dataset ({dataloaders.test_len})"
 
@@ -173,8 +182,9 @@ def test_rescaling(dataloaders, x_y_z_recon_mean_std_function, test_metrics_func
             psnry_scores.append(test_scores[1])
 
             if save_imgs and dataloaders.test_dataloader.batch_size==1:
-                save_image(quantize_ste(x_recon_from_y), f"data/test_output/{str(test_batch_no).zfill(3)}_{int(time.time())}.png")
-                save_image(quantize_ste(y), f"data/test_output/{str(test_batch_no).zfill(3)}_LR_{int(time.time())}.png")
+                create_parent_dir(f"output/dataset_test/{foldername}/x")
+                save_image(quantize_ste(x_recon_from_y), f"output/dataset_test/{foldername}/{str(test_batch_no).zfill(3)}_{int(time.time())}.png")
+                save_image(quantize_ste(y), f"output/dataset_test/{foldername}/{str(test_batch_no).zfill(3)}_LR_{int(time.time())}.png")
 
             print(f"Img [{test_batch_no}]: acquired test metrics {[round(float(t), 4) for t in test_scores]}")
                         
@@ -217,7 +227,6 @@ def test_rescaling(dataloaders, x_y_z_recon_mean_std_function, test_metrics_func
 
 def test_inn(inn,
     dataloaders: DataLoaders,
-    scale,
     lambda_recon=1,
     lambda_guide=1,
     lambda_distr=1,
@@ -227,8 +236,25 @@ def test_inn(inn,
     mean_losses=False,
     quantize_recon=False
 ):
-    test_function_irn = get_test_function_irn(lambda_recon, lambda_guide, lambda_distr, scale, metric_crop_border, fast_gpu_testing=fast_gpu_testing, mean_losses=mean_losses, quantize_recon=quantize_recon)
+    test_function_irn = get_test_function_irn(lambda_recon, lambda_guide, lambda_distr, metric_crop_border, fast_gpu_testing=fast_gpu_testing, mean_losses=mean_losses, quantize_recon=quantize_recon)
     sample_function_irn = get_sample_function_irn(inn)
+    total_loss, psnr_RGB, psnr_Y, ssim_RGB, ssim_Y, loss_recon, loss_guide, loss_distr = test_rescaling(dataloaders, sample_function_irn, test_function_irn, save_imgs=save_imgs)
+
+    return total_loss, psnr_RGB, psnr_Y, ssim_RGB, ssim_Y, loss_recon, loss_guide, loss_distr
+
+def test_multi_inn(inn, num_applications, mid_quantization,
+    dataloaders: DataLoaders,
+    lambda_recon=1,
+    lambda_guide=1,
+    lambda_distr=1,
+    metric_crop_border=4,
+    save_imgs=False,
+    fast_gpu_testing=False,
+    mean_losses=False,
+    quantize_recon=False
+):
+    test_function_irn = get_test_function_irn(lambda_recon, lambda_guide, lambda_distr, metric_crop_border, fast_gpu_testing=fast_gpu_testing, mean_losses=mean_losses, quantize_recon=quantize_recon)
+    sample_function_irn = get_multi_sample_function_irn(inn, num_applications, mid_quantization)
     total_loss, psnr_RGB, psnr_Y, ssim_RGB, ssim_Y, loss_recon, loss_guide, loss_distr = test_rescaling(dataloaders, sample_function_irn, test_function_irn, save_imgs=save_imgs)
 
     return total_loss, psnr_RGB, psnr_Y, ssim_RGB, ssim_Y, loss_recon, loss_guide, loss_distr
@@ -262,12 +288,11 @@ def get_saved_inn(path):
             "full_size_test_imgs": True,
             "lr_batch_milestones": [7000, 14000, 21000, 28000],
             "lr_gamma": 0.5,
-            "batchnorm": False
+            "batchnorm": False,
+            "actnorm": False,
     }
 
-    inn = IRN(3, config["img_size"], config["img_size"], scale=config["scale"],
-              inv_per_ds=config["inv_per_ds"], inv_final_level_extra=config["inv_final_level_extra"],
-              inv_first_level_extra=config["inv_first_level_extra"], batchnorm=config["batchnorm"])
+    inn = IRN(3, config["img_size"], config["img_size"], cfg=config)
 
     inn, optimizer, epoch, min_training_loss, min_test_loss, max_test_psnr_y = load_network(inn, path, None)
 
@@ -281,15 +306,16 @@ if __name__ == '__main__':
     np.random.seed(10)
 
     # Load the data (note the training params here are unnecessary)
-    scale = 4
+    scale = 16
     crop = scale
 
     dataloaders = Div2KDataLoaders(16, 144, full_size_test_imgs=True, test_img_size_divisor=scale)
     
-    #inn = get_saved_inn("./saved_models/model_1645724973_2772.0_1.66_27g0ujq7.pth")
-    #total_loss, psnr_RGB, psnr_Y, ssim_RGB, ssim_Y, loss_recon, loss_guide, loss_distr = test_inn(inn, dataloaders, scale, 100, 20, 0.01, metric_crop_border=crop, save_imgs=False)
+    inn = get_saved_inn("./saved_models/model_1645724973_2772.0_1.66_27g0ujq7.pth")
+    #total_loss, psnr_RGB, psnr_Y, ssim_RGB, ssim_Y, loss_recon, loss_guide, loss_distr = test_inn(inn, dataloaders, 100, 20, 0.01, metric_crop_border=crop, save_imgs=False)
+    total_loss, psnr_RGB, psnr_Y, ssim_RGB, ssim_Y, loss_recon, loss_guide, loss_distr = test_multi_inn(inn, 2, True, dataloaders, 1, 16, 1, metric_crop_border=crop, save_imgs=True)
     
-    psnr_RGB, psnr_Y, ssim, ssim_Y = test_imgfolder(dataloaders, scale, crop, "./data/DIV2K/DIV2K_valid_x4recon_bicubic")
+    #psnr_RGB, psnr_Y, ssim, ssim_Y = test_imgfolder(dataloaders, scale, crop, "./data/DIV2K/DIV2K_valid_x4recon_bicubic")
 
-    #print(f"(^ total_loss, psnr_RGB, psnr_Y, ssim_RGB, ssim_Y, loss_recon, loss_guide, loss_distr)\n")
-    print(f"(^ PSNR, PSNR_Y, SSIM, SSIM_Y)\n")
+    print(f"(^ total_loss, psnr_RGB, psnr_Y, ssim_RGB, ssim_Y, loss_recon, loss_guide, loss_distr)\n")
+    #print(f"(^ PSNR, PSNR_Y, SSIM, SSIM_Y)\n")

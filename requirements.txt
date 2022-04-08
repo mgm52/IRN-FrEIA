@@ -18,3 +18,5 @@ git+https://github.com/mgm52/torchSR.git
 opencv-python
 
 pyyaml
+sphinx
+sphinx_rtd_theme

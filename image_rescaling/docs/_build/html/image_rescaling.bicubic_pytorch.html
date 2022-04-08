@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>image_rescaling.bicubic_pytorch package &mdash; IRN-FrEIA  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="image_rescaling.networks package" href="image_rescaling.networks.html" />
+    <link rel="prev" title="image_rescaling package" href="image_rescaling.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> IRN-FrEIA
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">DISSERTATION</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="image_rescaling.html">image_rescaling package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="image_rescaling.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">image_rescaling.bicubic_pytorch package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_rescaling.networks.html">image_rescaling.networks package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_rescaling.tests.html">image_rescaling.tests package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#module-image_rescaling.config_loader">image_rescaling.config_loader module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#image-rescaling-data-module">image_rescaling.data module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#image-rescaling-loss-module">image_rescaling.loss module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#image-rescaling-main-module">image_rescaling.main module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#module-image_rescaling.network_saving">image_rescaling.network_saving module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#image-rescaling-test-module">image_rescaling.test module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#module-image_rescaling.utils">image_rescaling.utils module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#module-image_rescaling.visualize">image_rescaling.visualize module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#module-image_rescaling">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">IRN-FrEIA</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">DISSERTATION</a> &raquo;</li>
+          <li><a href="image_rescaling.html">image_rescaling package</a> &raquo;</li>
+      <li>image_rescaling.bicubic_pytorch package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/image_rescaling.bicubic_pytorch.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="image-rescaling-bicubic-pytorch-package">
+<h1>image_rescaling.bicubic_pytorch package<a class="headerlink" href="#image-rescaling-bicubic-pytorch-package" title="Permalink to this headline"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline"></a></h2>
+</section>
+<section id="module-image_rescaling.bicubic_pytorch.core">
+<span id="image-rescaling-bicubic-pytorch-core-module"></span><h2>image_rescaling.bicubic_pytorch.core module<a class="headerlink" href="#module-image_rescaling.bicubic_pytorch.core" title="Permalink to this headline"></a></h2>
+<p>A standalone PyTorch implementation for fast and efficient bicubic resampling.
+The resulting values are the same to MATLAB function imresize(‘bicubic’).</p>
+<p>## Author:      Sanghyun Son
+## Email:       <a class="reference external" href="mailto:sonsang35&#37;&#52;&#48;gmail&#46;com">sonsang35<span>&#64;</span>gmail<span>&#46;</span>com</a> (primary), <a class="reference external" href="mailto:thstkdgus35&#37;&#52;&#48;snu&#46;ac&#46;kr">thstkdgus35<span>&#64;</span>snu<span>&#46;</span>ac<span>&#46;</span>kr</a> (secondary)
+## Version:     1.2.0
+## Last update: July 9th, 2020 (KST)</p>
+<p>Depencency: torch</p>
+<p>Example::
+&gt;&gt;&gt; import torch
+&gt;&gt;&gt; import core
+&gt;&gt;&gt; x = torch.arange(16).float().view(1, 1, 4, 4)
+&gt;&gt;&gt; y = core.imresize(x, sizes=(3, 3))
+&gt;&gt;&gt; print(y)
+tensor([[[[ 0.7506,  2.1004,  3.4503],</p>
+<blockquote>
+<div><p>[ 6.1505,  7.5000,  8.8499],
+[11.5497, 12.8996, 14.2494]]]])</p>
+</div></blockquote>
+<dl class="py function">
+<dt class="sig sig-object py" id="image_rescaling.bicubic_pytorch.core.imresize">
+<span class="sig-prename descclassname"><span class="pre">image_rescaling.bicubic_pytorch.core.</span></span><span class="sig-name descname"><span class="pre">imresize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sizes</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'cubic'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rotation_degree</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding_type</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'reflect'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">antialiasing</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="headerlink" href="#image_rescaling.bicubic_pytorch.core.imresize" title="Permalink to this definition"></a></dt>
+<dd><dl class="simple">
+<dt>Args:</dt><dd><p>x (torch.Tensor):
+scale (float):
+sizes (tuple(int, int)):
+kernel (str, default=’cubic’):
+sigma (float, default=2):
+rotation_degree (float, default=0):
+padding_type (str, default=’reflect’):
+antialiasing (bool, default=True):</p>
+</dd>
+<dt>Return:</dt><dd><p>torch.Tensor:</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-image_rescaling.bicubic_pytorch">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-image_rescaling.bicubic_pytorch" title="Permalink to this headline"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="image_rescaling.html" class="btn btn-neutral float-left" title="image_rescaling package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="image_rescaling.networks.html" class="btn btn-neutral float-right" title="image_rescaling.networks package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, mgm52.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,13 +1,15 @@
 import torch
 import torch.nn.functional as F
 from bicubic_pytorch.core import imresize
-from networks.freia_invertible_rescaling import quantize_ste
+from networks.invertible_rescaling_network import quantize_ste
 
 # Expects x to be in range [0, 1], y to be roughly in range [0, 1].
-def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale, mean_y, std_y, batchnorm=False, mean_losses=False, quantize_recon=False):
+def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, mean_y, std_y, batchnorm=False, mean_losses=False, quantize_recon=False):
     # Purpose of Loss_Reconstruction: accurate upscaling
     # Might make sense to quantize x_recon because this means the model has more freedom - more "valid" outputs
     
+    scale = round(x.shape[-1] / y.shape[-1])
+
     if quantize_recon: x_recon_quant = quantize_ste(x_recon_from_y)
     else: x_recon_quant = x_recon_from_y
     loss_recon = torch.sum(torch.sqrt((x_recon_quant - x)**2 + 0.000001)) #F.l1_loss(x, x_recon_quant, reduction="sum")# + torch.abs(torch.std(x, axis=1) - torch.std(x_recon_from_y, axis=1)).mean()

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>image_rescaling.networks package &mdash; IRN-FrEIA  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="image_rescaling.tests package" href="image_rescaling.tests.html" />
+    <link rel="prev" title="image_rescaling.bicubic_pytorch package" href="image_rescaling.bicubic_pytorch.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> IRN-FrEIA
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">DISSERTATION</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="image_rescaling.html">image_rescaling package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="image_rescaling.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="image_rescaling.bicubic_pytorch.html">image_rescaling.bicubic_pytorch package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">image_rescaling.networks package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_rescaling.tests.html">image_rescaling.tests package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#module-image_rescaling.config_loader">image_rescaling.config_loader module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#image-rescaling-data-module">image_rescaling.data module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#image-rescaling-loss-module">image_rescaling.loss module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#image-rescaling-main-module">image_rescaling.main module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#module-image_rescaling.network_saving">image_rescaling.network_saving module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#image-rescaling-test-module">image_rescaling.test module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#module-image_rescaling.utils">image_rescaling.utils module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#module-image_rescaling.visualize">image_rescaling.visualize module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image_rescaling.html#module-image_rescaling">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">IRN-FrEIA</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">DISSERTATION</a> &raquo;</li>
+          <li><a href="image_rescaling.html">image_rescaling package</a> &raquo;</li>
+      <li>image_rescaling.networks package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/image_rescaling.networks.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="image-rescaling-networks-package">
+<h1>image_rescaling.networks package<a class="headerlink" href="#image-rescaling-networks-package" title="Permalink to this headline"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline"></a></h2>
+</section>
+<section id="image-rescaling-networks-batchnorm-seq-module">
+<h2>image_rescaling.networks.batchnorm_seq module<a class="headerlink" href="#image-rescaling-networks-batchnorm-seq-module" title="Permalink to this headline"></a></h2>
+</section>
+<section id="module-image_rescaling.networks.coupling">
+<span id="image-rescaling-networks-coupling-module"></span><h2>image_rescaling.networks.coupling module<a class="headerlink" href="#module-image_rescaling.networks.coupling" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="image_rescaling.networks.coupling.AffineCouplingOneSidedIRN">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">image_rescaling.networks.coupling.</span></span><span class="sig-name descname"><span class="pre">AffineCouplingOneSidedIRN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dims_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dims_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subnet_constructor</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clamp</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clamp_activation</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'ATAN'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.networks.coupling.AffineCouplingOneSidedIRN" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">FrEIA.modules.coupling_layers._BaseCouplingBlock</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="image_rescaling.networks.coupling.AffineCouplingOneSidedIRN.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rev</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.networks.coupling.AffineCouplingOneSidedIRN.forward" title="Permalink to this definition"></a></dt>
+<dd><p>See base class docstring</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="image_rescaling.networks.coupling.AffineCouplingOneSidedIRN.training">
+<span class="sig-name descname"><span class="pre">training</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><a class="headerlink" href="#image_rescaling.networks.coupling.AffineCouplingOneSidedIRN.training" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="image_rescaling.networks.coupling.EnhancedCouplingOneSidedIRN">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">image_rescaling.networks.coupling.</span></span><span class="sig-name descname"><span class="pre">EnhancedCouplingOneSidedIRN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dims_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dims_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subnet_constructor</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clamp</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clamp_activation</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'SIGMOID'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.networks.coupling.EnhancedCouplingOneSidedIRN" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">FrEIA.modules.coupling_layers._BaseCouplingBlock</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="image_rescaling.networks.coupling.EnhancedCouplingOneSidedIRN.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rev</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.networks.coupling.EnhancedCouplingOneSidedIRN.forward" title="Permalink to this definition"></a></dt>
+<dd><p>See base class docstring</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="image_rescaling.networks.coupling.EnhancedCouplingOneSidedIRN.training">
+<span class="sig-name descname"><span class="pre">training</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><a class="headerlink" href="#image_rescaling.networks.coupling.EnhancedCouplingOneSidedIRN.training" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-image_rescaling.networks.dense_block">
+<span id="image-rescaling-networks-dense-block-module"></span><h2>image_rescaling.networks.dense_block module<a class="headerlink" href="#module-image_rescaling.networks.dense_block" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="image_rescaling.networks.dense_block.DenseBlock">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">image_rescaling.networks.dense_block.</span></span><span class="sig-name descname"><span class="pre">DenseBlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_xavier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.networks.dense_block.DenseBlock" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="image_rescaling.networks.dense_block.DenseBlock.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.networks.dense_block.DenseBlock.forward" title="Permalink to this definition"></a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="image_rescaling.networks.dense_block.DenseBlock.training">
+<span class="sig-name descname"><span class="pre">training</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><a class="headerlink" href="#image_rescaling.networks.dense_block.DenseBlock.training" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="image_rescaling.networks.dense_block.db_subnet">
+<span class="sig-prename descclassname"><span class="pre">image_rescaling.networks.dense_block.</span></span><span class="sig-name descname"><span class="pre">db_subnet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_out</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.networks.dense_block.db_subnet" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="image-rescaling-networks-invertible-rescaling-network-module">
+<h2>image_rescaling.networks.invertible_rescaling_network module<a class="headerlink" href="#image-rescaling-networks-invertible-rescaling-network-module" title="Permalink to this headline"></a></h2>
+</section>
+<section id="module-image_rescaling.networks.straight_through_estimator">
+<span id="image-rescaling-networks-straight-through-estimator-module"></span><h2>image_rescaling.networks.straight_through_estimator module<a class="headerlink" href="#module-image_rescaling.networks.straight_through_estimator" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="image_rescaling.networks.straight_through_estimator.StraightThroughEstimator">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">image_rescaling.networks.straight_through_estimator.</span></span><span class="sig-name descname"><span class="pre">StraightThroughEstimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.networks.straight_through_estimator.StraightThroughEstimator" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.autograd.function.Function</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.backward">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">backward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grad_output</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.backward" title="Permalink to this definition"></a></dt>
+<dd><p>Defines a formula for differentiating the operation with backward mode
+automatic differentiation.</p>
+<p>This function is to be overridden by all subclasses.</p>
+<p>It must accept a context <code class="xref py py-attr docutils literal notranslate"><span class="pre">ctx</span></code> as the first argument, followed by
+as many outputs as the <a class="reference internal" href="#image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.forward" title="image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> returned (None will be passed in
+for non tensor outputs of the forward function),
+and it should return as many tensors, as there were inputs to
+<a class="reference internal" href="#image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.forward" title="image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a>. Each argument is the gradient w.r.t the given output,
+and each returned value should be the gradient w.r.t. the
+corresponding input. If an input is not a Tensor or is a Tensor not
+requiring grads, you can just pass None as a gradient for that input.</p>
+<p>The context can be used to retrieve tensors saved during the forward
+pass. It also has an attribute <code class="xref py py-attr docutils literal notranslate"><span class="pre">ctx.needs_input_grad</span></code> as a tuple
+of booleans representing whether each input needs gradient. E.g.,
+<a class="reference internal" href="#image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.backward" title="image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.backward"><code class="xref py py-func docutils literal notranslate"><span class="pre">backward()</span></code></a> will have <code class="docutils literal notranslate"><span class="pre">ctx.needs_input_grad[0]</span> <span class="pre">=</span> <span class="pre">True</span></code> if the
+first input to <a class="reference internal" href="#image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.forward" title="image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> needs gradient computated w.r.t. the
+output.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.forward">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_fun</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.forward" title="Permalink to this definition"></a></dt>
+<dd><p>Performs the operation.</p>
+<p>This function is to be overridden by all subclasses.</p>
+<p>It must accept a context ctx as the first argument, followed by any
+number of arguments (tensors or other types).</p>
+<p>The context can be used to store arbitrary data that can be then
+retrieved during the backward pass.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="image_rescaling.networks.straight_through_estimator.quantize_ste">
+<span class="sig-prename descclassname"><span class="pre">image_rescaling.networks.straight_through_estimator.</span></span><span class="sig-name descname"><span class="pre">quantize_ste</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.networks.straight_through_estimator.quantize_ste" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="image_rescaling.networks.straight_through_estimator.quantize_to_int_ste">
+<span class="sig-prename descclassname"><span class="pre">image_rescaling.networks.straight_through_estimator.</span></span><span class="sig-name descname"><span class="pre">quantize_to_int_ste</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.networks.straight_through_estimator.quantize_to_int_ste" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-image_rescaling.networks">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-image_rescaling.networks" title="Permalink to this headline"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="image_rescaling.bicubic_pytorch.html" class="btn btn-neutral float-left" title="image_rescaling.bicubic_pytorch package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="image_rescaling.tests.html" class="btn btn-neutral float-right" title="image_rescaling.tests package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, mgm52.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

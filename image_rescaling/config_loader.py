@@ -1,7 +1,7 @@
 import yaml
 
-def load_config(path):
-  with open(path, "r") as inp:
+def load_config(cfg_filename):
+  with open("./configs/" + cfg_filename, "r") as inp:
     try:
       config = yaml.safe_load(inp)
       print(f"Successfully loaded config:\n{config}")
