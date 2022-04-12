@@ -25,13 +25,6 @@ import matplotlib.pyplot as plt
 plt.rcParams["font.family"] = "serif"
 #from IQA_pytorch import SSIM, DISTS
 
-# input should be size (n, 3, h, w) - in range [0,1]
-# output has size (n, 1, h, w) - treat the output as if it has range [0,255]
-def rgb_to_y(rgb_imgs):
-  rgb_imgs *= 255
-  output = (rgb_imgs[:,0,:,:] * 65.481 + rgb_imgs[:,1,:,:] * 128.553 + rgb_imgs[:,2,:,:] * 24.966)/255.0 + 1
-  return output.unsqueeze(dim=1)
-
 def latest_file_in_folder(folder_path, file_ending=""):
     # Can target specific file extensions by replacing * with e.g. *.pth
     latest_file_path = max(glob.glob(f"{folder_path}/*{file_ending}"), key=os.path.getctime)
@@ -120,7 +113,7 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
         "initial_learning_rate", "grad_clipping", "grad_value_clipping", "scale",
         "lambda_recon", "lambda_guide", "lambda_distr",
         "mean_losses", "fast_gpu_testing", "quantize_recon_loss",
-        "lr_batch_milestones", "lr_gamma"
+        "lr_batch_milestones", "lr_gamma", "zerosample", "y_channel_usage"
     ])
 
     print(f"About to train model: {inn}")
@@ -147,8 +140,8 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
 
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=cfg["lr_batch_milestones"], gamma=cfg["lr_gamma"])
 
+    avg_training_loss = max([99999, cfg["target_loss"]+1])
     recent_training_losses = []
-    avg_training_loss = cfg["target_loss"]+1
 
     epoch_prev_test = epoch-1
     epoch_prev_training_log = epoch-1
@@ -204,12 +197,12 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
         time_dataloading += stop-start
 
         start = timer()
-        x, y, z, x_recon_from_y, mean_y, std_y = sample_inn(inn, x)
+        x, y, z, x_recon_from_y, mean_y, std_y = sample_inn(inn, x, zerosample=cfg["zerosample"])
         stop = timer()
         time_forward += stop - start
 
         start = timer()
-        loss_recon, loss_guide, loss_distr, loss_batchnorm, total_loss = calculate_irn_loss(cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], x, y, z, x_recon_from_y, cfg["scale"], mean_y, std_y, mean_losses=cfg["mean_losses"], quantize_recon=cfg["quantize_recon_loss"])
+        loss_recon, loss_guide, loss_distr, loss_batchnorm, total_loss = calculate_irn_loss(cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], x, y, z, x_recon_from_y, cfg["scale"], mean_y, std_y, mean_losses=cfg["mean_losses"], quantize_recon=cfg["quantize_recon_loss"], y_channel_usage=cfg["y_channel_usage"])
         stop = timer()
         time_loss += stop - start
 
@@ -231,13 +224,16 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
                 if xi < x.shape[0]:
                     basics += f" \ndistr mean={float(z[xi].mean())} \ndistr loss={float((z[xi]**2).sum())}"
                 plt_titles.append(basics)
-            see_multiple_imgs(x_and_xrecon_and_diff_imgs, 3, 16, row_titles=[f"lr, lg, ld, lt: {(float(loss_recon), float(loss_guide), float(loss_distr), float(total_loss))}.\nxmin={x.min()} ymim={y.min()} reconmin={x_recon_from_y.min()}\n\n\n\n"], plot_titles=plt_titles, see=False, save=True, filename=f"{run_name}_{int(time.time())}_{batch_no}_{int(total_loss)}", smallSize=False)
+            see_multiple_imgs(x_and_xrecon_and_diff_imgs, 3, 16,
+                row_titles=[f"lr, lg, ld, lt: {(float(loss_recon), float(loss_guide), float(loss_distr), float(total_loss))}.\nxmin={x.min()} ymim={y.min()} reconmin={x_recon_from_y.min()}\n\n\n\n"],
+                plot_titles=plt_titles, see=False, save=True, filename=f"debug_imgs/{run_name}_{int(time.time())}_{batch_no}_{int(total_loss)}", smallSize=False)
+            epoch_prev_spikeimg = epoch
 
         if False and batch_no % 5 == 0:
             with torch.no_grad():
                 blacksquare = torch.zeros(1, 3, x.shape[-1], x.shape[-1])
-                blacksquare, bs_y, bs_z, bs_x_recon_from_y, bs_mean_y, bs_std_y = sample_inn(inn, blacksquare)
-                bsloss_recon, bsloss_guide, bsloss_distr, bsloss_batchnorm, bstotal_loss = calculate_irn_loss(cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], blacksquare, bs_y, bs_z, bs_x_recon_from_y, cfg["scale"], bs_mean_y, bs_std_y, mean_losses=cfg["mean_losses"], quantize_recon=cfg["quantize_recon_loss"])
+                blacksquare, bs_y, bs_z, bs_x_recon_from_y, bs_mean_y, bs_std_y = sample_inn(inn, blacksquare, zerosample=cfg["zerosample"])
+                bsloss_recon, bsloss_guide, bsloss_distr, bsloss_batchnorm, bstotal_loss = calculate_irn_loss(cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], blacksquare, bs_y, bs_z, bs_x_recon_from_y, cfg["scale"], bs_mean_y, bs_std_y, mean_losses=cfg["mean_losses"], quantize_recon=cfg["quantize_recon_loss"], y_channel_usage=cfg["y_channel_usage"])
 
                 see_multiple_imgs([blacksquare[0].cpu().detach(), imresize(bs_y[0].cpu().detach(), 4), bs_x_recon_from_y[0].cpu().detach()], 1, 3,
                                    row_titles=[f"lr, lg, ld, lt: {(float(bsloss_recon), float(bsloss_guide), float(bsloss_distr), float(bstotal_loss))}. \nreconmin={float(bs_x_recon_from_y.min())}, reconmax={float(bs_x_recon_from_y.max())}\n\n\n\n"],
@@ -258,8 +254,8 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
             print(f"We are sampling at {batch_no+1} batches, {epoch} epochs...")
             with torch.no_grad():
                 index_of_sample_image = 4
-                x, y, z, x_recon_from_y, mean_y, std_y = sample_inn(inn, dataloaders.test_dataloader.dataset[index_of_sample_image][0].unsqueeze(dim=0))
-            see_irn_example(x, y, z, x_recon_from_y, cfg["scale"], see=False, save=True, wandb_log=True, wandb_step=batch_no, name=all_test_losses[-1] if len(all_test_losses)>0 else "-", render_grid=False, metric_crop_border=cfg["scale"])
+                x, y, z, x_recon_from_y, mean_y, std_y = sample_inn(inn, dataloaders.test_dataloader.dataset[index_of_sample_image][0].unsqueeze(dim=0), zerosample=cfg["zerosample"])
+            see_irn_example(x, y, z, x_recon_from_y, cfg["scale"], see=False, save=False, wandb_log=True, wandb_step=batch_no, name=all_test_losses[-1] if len(all_test_losses)>0 else "-", render_grid=False, metric_crop_border=cfg["scale"])
             #for j in range(2):
             #    see_irn_example(x, y, z, x_recon_from_y, see=False, save=False, name=all_test_losses[-1])
             epoch_prev_sample = epoch
@@ -276,7 +272,7 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
             print(f'In test dataset, in last {cfg["epochs_between_tests"] if epoch>0 else 0} epochs:')
 
             # Crop the border of test images by the resize scale to avoid capturing outliers (this is done in the IRN paper)
-            test_loss, test_psnr_rgb, test_psnr_y, test_ssim_RGB, test_ssim_Y, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, cfg["scale"], cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], metric_crop_border=cfg["scale"], fast_gpu_testing=cfg["fast_gpu_testing"], mean_losses=cfg["mean_losses"], quantize_recon=cfg["quantize_recon_loss"])
+            test_loss, test_psnr_rgb, test_psnr_y, test_ssim_RGB, test_ssim_Y, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, cfg["scale"], cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], metric_crop_border=cfg["scale"], fast_gpu_testing=cfg["fast_gpu_testing"], mean_losses=cfg["mean_losses"], quantize_recon=cfg["quantize_recon_loss"], zerosample=cfg["zerosample"], y_channel_usage=cfg["y_channel_usage"])
             all_test_losses.append(test_loss)
             all_test_psnr_y.append(test_psnr_y)
             print("")

@@ -6,7 +6,7 @@ inv_final_level_extra: 0
 batchnorm: False
 img_size: 144
 actnorm: False
-zerosample: False
+zerosample: True
 
 # Training
 batch_size: 16
@@ -15,7 +15,8 @@ lambda_guide: 16
 lambda_distr: 1
 initial_learning_rate: 0.0002
 seed: 10
-grad_clipping: 2
+grad_clipping: 10
+grad_value_clipping: null
 lr_batch_milestones: [100000, 200000, 300000, 400000]
 lr_gamma: 0.5
 mean_losses: False
@@ -23,7 +24,7 @@ quantize_recon_loss: False
 quantize_guide_loss: False # currently not used
 
 # Training output
-max_batches: 500000
+max_batches: 525000
 max_epochs: -1
 target_loss: -1
 epochs_between_tests: 100

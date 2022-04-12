@@ -6,6 +6,10 @@ inv_final_level_extra: 0
 batchnorm: False
 img_size: 144
 actnorm: False
+zerosample: False
+clamp: 1.0
+clamp_min: -1.0
+clamp_tightness: 1.0
 
 # Training
 batch_size: 16
@@ -23,11 +27,11 @@ quantize_recon_loss: False
 quantize_guide_loss: False # currently not used
 
 # Training output
-max_batches: 500000
+max_batches: 525000
 max_epochs: -1
 target_loss: -1
 epochs_between_tests: 100
-epochs_between_training_log: 0.2
+epochs_between_training_log: 1
 epochs_between_samples: 25
 epochs_between_saves: 10
 

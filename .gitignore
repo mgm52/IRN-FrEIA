@@ -8,6 +8,9 @@
 /output
 /saved_models
 /image_rescaling/wandb
+/image_rescaling/debug_imgs
+machine.file.*
+/debug_imgs
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

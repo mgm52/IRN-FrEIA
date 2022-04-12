@@ -80,7 +80,7 @@ class BatchnormSequenceINN(ff.SequenceINN):
 # inn x         is in [(n, c, w, h), (n, c, w, h), ...] format
 # inn output    is in [(n, c, w, h), (n, c, w, h), ...] format
 def IRN(*dims, cfg):
-    config_loader.check_keys(cfg, ["scale", "actnorm", "inv_per_ds", "inv_final_level_extra", "inv_first_level_extra", "batchnorm"])
+    config_loader.check_keys(cfg, ["scale", "actnorm", "inv_per_ds", "inv_final_level_extra", "inv_first_level_extra", "batchnorm", "clamp", "clamp_min", "clamp_tightness"])
 
     ds_count = int(log2(cfg["scale"]))
     assert ds_count == log2(cfg["scale"]), f"IRN scale must be a power of 2 (was given scale={cfg['scale']})"
@@ -94,7 +94,7 @@ def IRN(*dims, cfg):
         if d==0: inv_count += cfg["inv_first_level_extra"]
         elif d==ds_count-1: inv_count += cfg["inv_final_level_extra"]
         for i in range(inv_count):
-            inn.append(EnhancedCouplingOneSidedIRN, subnet_constructor=db_subnet)
+            inn.append(EnhancedCouplingOneSidedIRN, subnet_constructor=db_subnet, clamp=cfg["clamp"], clamp_min=cfg["clamp_min"], clamp_tightness=cfg["clamp_tightness"])
             if cfg["actnorm"]: inn.append(ActNorm)
     return inn.cuda() if device=="cuda" else inn
 
@@ -125,7 +125,7 @@ def quantize_to_int_ste(x):
     return StraightThroughEstimator.apply(x, lambda y : (torch.clamp(y, min=0, max=1) * 255.0).round().int())
 
 # output is in range [0, 1]
-def sample_inn(inn, x: torch.Tensor, batchnorm=False):
+def sample_inn(inn, x: torch.Tensor, batchnorm=False, zerosample=False):
     if device=="cuda": x = x.cuda()
 
     #x = torch.tensor(np.array(x), dtype=torch.float, device=device).reshape(-1, *dataloaders.sample_shape)
@@ -155,7 +155,11 @@ def sample_inn(inn, x: torch.Tensor, batchnorm=False):
     # y.shape == (n, 3, w2, h2)
     # z.shape == (n, c2-3, w2, h2)
 
-    z_sample = torch.normal(torch.zeros_like(z), torch.ones_like(z))
+    if zerosample:
+        z_sample = torch.zeros_like(z)
+    else:
+        z_sample = torch.normal(torch.zeros_like(z), torch.ones_like(z))
+
     # z_sample.shape == (n, c2-3, w2, h2)
 
     ### Here, we assume that the y that was extracted in the forward pass has mean 0, std 1.

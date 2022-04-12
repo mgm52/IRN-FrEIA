@@ -16,6 +16,7 @@ from timeit import default_timer as timer
 from networks.freia_invertible_rescaling import quantize_ste
 import glob
 import os
+from utils import rgb_to_y
 import random
 from loss import calculate_irn_loss
 import matplotlib.pyplot as plt
@@ -25,17 +26,9 @@ def crop_tensor_border(x, border):
     if border==0: return x
     return x[..., border:-border, border:-border]
 
-# input should be size (n, 3, h, w) - in range [0,1]
-# output has size (n, 1, h, w) - treat the output as if it has range [0,1]
-def rgb_to_y(rgb_imgs, round255=False, plus16=True, bgr=False):
-    assert len(rgb_imgs.shape) == 4 and rgb_imgs.shape[1] == 3, "Input must have shape [n, 3, h, w]"
-    output = (rgb_imgs[:,2 if bgr else 0,:,:] * 65.481 + rgb_imgs[:,1,:,:] * 128.553 + rgb_imgs[:,0 if bgr else 2,:,:] * 24.966) + (16 if plus16 else 1)
-    if round255: output = output.round()
-    return output.unsqueeze(dim=1) / 255.0
-
-def get_test_function_irn(lambda_recon, lambda_guide, lambda_distr, scale, metric_crop_border, fast_gpu_testing=False, mean_losses=False, quantize_recon=False):
+def get_test_function_irn(lambda_recon, lambda_guide, lambda_distr, scale, metric_crop_border, fast_gpu_testing=False, mean_losses=False, quantize_recon=False, y_channel_usage=0):
     def test_function_irn(x, y, z, x_recon_from_y, mean_y, std_y):
-        loss_recon, loss_guide, loss_distr, loss_batchnorm, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale, mean_y, std_y, batchnorm=False, mean_losses=mean_losses, quantize_recon=quantize_recon)
+        loss_recon, loss_guide, loss_distr, loss_batchnorm, total_loss = calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, scale, mean_y, std_y, batchnorm=False, mean_losses=mean_losses, quantize_recon=quantize_recon, y_channel_usage=y_channel_usage)
 
         test_function_psnr_ssim = get_test_function_psnr_ssim(metric_crop_border, fast_gpu_testing=fast_gpu_testing)
         [psnr_RGB, psnr_Y, ssim_RGB, ssim_Y] = test_function_psnr_ssim(x, y, z, x_recon_from_y, mean_y, std_y)
@@ -93,8 +86,8 @@ def get_test_function_psnr_ssim(metric_crop_border, fast_gpu_testing=False):
         return [float(psnr_RGB), float(psnr_Y), float(ssim_RGB), float(ssim_Y)]
     return test_function_psnr_ssim
 
-def get_sample_function_irn(inn):
-    return lambda x: sample_inn(inn, x.clone())
+def get_sample_function_irn(inn, zerosample):
+    return lambda x: sample_inn(inn, x.clone(), zerosample=zerosample)
 
 def get_sample_function_bicub(scale):
     def sample_function_bicub(x):
@@ -225,10 +218,12 @@ def test_inn(inn,
     save_imgs=False,
     fast_gpu_testing=False,
     mean_losses=False,
-    quantize_recon=False
+    quantize_recon=False,
+    zerosample=False,
+    y_channel_usage=0
 ):
-    test_function_irn = get_test_function_irn(lambda_recon, lambda_guide, lambda_distr, scale, metric_crop_border, fast_gpu_testing=fast_gpu_testing, mean_losses=mean_losses, quantize_recon=quantize_recon)
-    sample_function_irn = get_sample_function_irn(inn)
+    test_function_irn = get_test_function_irn(lambda_recon, lambda_guide, lambda_distr, scale, metric_crop_border, fast_gpu_testing=fast_gpu_testing, mean_losses=mean_losses, quantize_recon=quantize_recon, y_channel_usage=y_channel_usage)
+    sample_function_irn = get_sample_function_irn(inn, zerosample)
     total_loss, psnr_RGB, psnr_Y, ssim_RGB, ssim_Y, loss_recon, loss_guide, loss_distr = test_rescaling(dataloaders, sample_function_irn, test_function_irn, save_imgs=save_imgs)
 
     return total_loss, psnr_RGB, psnr_Y, ssim_RGB, ssim_Y, loss_recon, loss_guide, loss_distr

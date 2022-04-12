@@ -6,6 +6,7 @@ inv_final_level_extra: 0
 batchnorm: False
 img_size: 144
 actnorm: False
+zerosample: False
 
 # Training
 batch_size: 16
