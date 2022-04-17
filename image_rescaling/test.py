@@ -86,8 +86,8 @@ def get_test_function_psnr_ssim(metric_crop_border, fast_gpu_testing=False):
         return [float(psnr_RGB), float(psnr_Y), float(ssim_RGB), float(ssim_Y)]
     return test_function_psnr_ssim
 
-def get_sample_function_irn(inn, zerosample):
-    return lambda x: sample_inn(inn, x.clone(), zerosample=zerosample)
+def get_sample_function_irn(inn, zerosample, sr_mode):
+    return lambda x: sample_inn(inn, x.clone(), zerosample=zerosample, sr_mode=sr_mode)
 
 def get_sample_function_bicub(scale):
     def sample_function_bicub(x):
@@ -220,10 +220,11 @@ def test_inn(inn,
     mean_losses=False,
     quantize_recon=False,
     zerosample=False,
-    y_channel_usage=0
+    y_channel_usage=0,
+    sr_mode=False
 ):
     test_function_irn = get_test_function_irn(lambda_recon, lambda_guide, lambda_distr, scale, metric_crop_border, fast_gpu_testing=fast_gpu_testing, mean_losses=mean_losses, quantize_recon=quantize_recon, y_channel_usage=y_channel_usage)
-    sample_function_irn = get_sample_function_irn(inn, zerosample)
+    sample_function_irn = get_sample_function_irn(inn, zerosample, sr_mode)
     total_loss, psnr_RGB, psnr_Y, ssim_RGB, ssim_Y, loss_recon, loss_guide, loss_distr = test_rescaling(dataloaders, sample_function_irn, test_function_irn, save_imgs=save_imgs)
 
     return total_loss, psnr_RGB, psnr_Y, ssim_RGB, ssim_Y, loss_recon, loss_guide, loss_distr

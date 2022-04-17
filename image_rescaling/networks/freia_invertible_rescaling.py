@@ -95,6 +95,7 @@ def IRN(*dims, cfg):
         elif d==ds_count-1: inv_count += cfg["inv_final_level_extra"]
         for i in range(inv_count):
             inn.append(EnhancedCouplingOneSidedIRN, subnet_constructor=db_subnet, clamp=cfg["clamp"], clamp_min=cfg["clamp_min"], clamp_tightness=cfg["clamp_tightness"])
+            
             if cfg["actnorm"]: inn.append(ActNorm)
     return inn.cuda() if device=="cuda" else inn
 
@@ -125,7 +126,7 @@ def quantize_to_int_ste(x):
     return StraightThroughEstimator.apply(x, lambda y : (torch.clamp(y, min=0, max=1) * 255.0).round().int())
 
 # output is in range [0, 1]
-def sample_inn(inn, x: torch.Tensor, batchnorm=False, zerosample=False):
+def sample_inn(inn, x: torch.Tensor, batchnorm=False, zerosample=False, sr_mode=False):
     if device=="cuda": x = x.cuda()
 
     #x = torch.tensor(np.array(x), dtype=torch.float, device=device).reshape(-1, *dataloaders.sample_shape)
@@ -168,7 +169,12 @@ def sample_inn(inn, x: torch.Tensor, batchnorm=False, zerosample=False):
         y_unprintable, _, _ = standardise_tensor(y_printable.clone(), 0, 1)
         y_and_z_sample = torch.cat((y_unprintable, z_sample), dim=1)
     else:
-        y_and_z_sample = torch.cat((y_quant, z_sample), dim=1)
+        if sr_mode:
+            scale = round(x.shape[-1] / y_and_z.shape[-1])
+            x_downscaled = quantize_ste(imresize(x, scale=1.0/scale)) #quantize_ste(imresize(x, scale=1.0/scale))
+            y_and_z_sample = torch.cat((x_downscaled, z_sample), dim=1)
+        else:
+            y_and_z_sample = torch.cat((y_quant, z_sample), dim=1)
     # y_and_z_sample.shape == (n, c2, w2, h2)
     x_recon_from_y, _ = inn([y_and_z_sample], rev=True)
     # x_recon_from_y.shape == (n, 3, w1, h1)        

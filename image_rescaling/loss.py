@@ -17,9 +17,9 @@ def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_reco
 
     if y_channel_usage != 0:
         loss_recon_ych = torch.sum(torch.sqrt((rgb_to_y(x_recon_quant) - rgb_to_y(x))**2 + 0.000001)) #F.l1_loss(x, x_recon_quant, reduction="sum")# + torch.abs(torch.std(x, axis=1) - torch.std(x_recon_from_y, axis=1)).mean()
-        loss_recon_ych = loss_recon / (x.numel() if mean_losses else x.shape[0])
+        loss_recon_ych = loss_recon_ych / (x.numel() if mean_losses else x.shape[0])
         # 0.858745 = (0.92149 - 0.062745) = max value of y_channel difference
-        loss_recon_ych = loss_recon * (1/0.858745 if mean_losses else 3/0.858745) # correct range to be [0, 1]
+        loss_recon_ych = loss_recon_ych * (1.0/0.858745 if mean_losses else 3.0/0.858745) # correct range to be [0, 1]
         loss_recon = (1 - y_channel_usage) * loss_recon + y_channel_usage * loss_recon_ych
 
     # Purpose of Loss_Guide: sensible downscaling
@@ -34,9 +34,9 @@ def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_reco
 
         if y_channel_usage != 0:
             loss_guide_ych = F.mse_loss(rgb_to_y(x_downscaled), rgb_to_y(y), reduction="sum")
-            loss_guide_ych = loss_guide / (y.numel() if mean_losses else y.shape[0])
+            loss_guide_ych = loss_guide_ych / (y.numel() if mean_losses else y.shape[0])
             # 0.737443 = (0.92149 - 0.062745)**2 = max value of y_channel squared difference
-            loss_guide_ych = loss_guide * (1/0.737443 if mean_losses else 3/0.737443) # correct range to be [0, 1]
+            loss_guide_ych = loss_guide_ych * (1.0/0.737443 if mean_losses else 3.0/0.737443) # correct range to be [0, 1]
             loss_guide = (1 - y_channel_usage) * loss_guide + y_channel_usage * loss_guide_ych
     else:
         loss_guide = 0

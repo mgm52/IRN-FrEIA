@@ -4,31 +4,37 @@ inv_per_ds: 8
 inv_first_level_extra: 0
 inv_final_level_extra: 0
 batchnorm: False
-img_size: 144
+img_size: 160
 actnorm: False
 zerosample: False
+clamp: 1.0
+clamp_min: -1.0
+clamp_tightness: 2.0
 
 # Training
 batch_size: 16
-lambda_recon: 1
-lambda_guide: 0
+lambda_recon: 2
+lambda_guide: 16
 lambda_distr: 1
-initial_learning_rate: 0.0002
+initial_learning_rate: 0.00025
 seed: 10
 grad_clipping: 10
-lr_batch_milestones: [100000, 200000, 300000, 400000]
+grad_value_clipping: null
+lr_batch_milestones: [92000, 200000, 300000, 400000, 450000]
 lr_gamma: 0.5
 mean_losses: False
 quantize_recon_loss: False
 quantize_guide_loss: False # currently not used
+y_channel_usage: 0
 epochs_between_flip_loss: null
 flip_loss_scale: null
+
 # Training output
-max_batches: 500000
+max_batches: 525000
 max_epochs: -1
 target_loss: -1
 epochs_between_tests: 100
-epochs_between_training_log: 0.2
+epochs_between_training_log: 1
 epochs_between_samples: 25
 epochs_between_saves: 10
 

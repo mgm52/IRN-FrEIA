@@ -26,6 +26,8 @@ mean_losses: False
 quantize_recon_loss: False
 quantize_guide_loss: False # currently not used
 y_channel_usage: 1
+epochs_between_flip_loss: null
+flip_loss_scale: null
 
 # Training output
 max_batches: 525000

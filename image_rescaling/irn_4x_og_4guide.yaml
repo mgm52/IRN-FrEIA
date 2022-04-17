@@ -22,6 +22,7 @@ lr_gamma: 0.5
 mean_losses: False
 quantize_recon_loss: False
 quantize_guide_loss: False # currently not used
+y_channel_usage: 0
 
 # Training output
 max_batches: 525000
