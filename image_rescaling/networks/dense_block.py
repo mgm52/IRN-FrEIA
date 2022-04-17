@@ -14,6 +14,7 @@ class DenseBlock(nn.Module):
 
         self.lrelu = nn.LeakyReLU(0.2, True)
         
+        # " Similar to [22], we also initialize the last convolution in all s and t subnetworks to zero, so training starts from an identity transform."
         for layer in [self.conv1, self.conv2, self.conv3, self.conv4]:
             if use_xavier:
                 init.xavier_normal_(layer.weight)

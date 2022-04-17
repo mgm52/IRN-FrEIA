@@ -6,6 +6,7 @@ inv_final_level_extra: 0
 batchnorm: False
 img_size: 144
 actnorm: False
+zerosample: False
 
 # Training
 batch_size: 16
@@ -21,6 +22,8 @@ lr_gamma: 0.5
 mean_losses: False
 quantize_recon_loss: False
 quantize_guide_loss: False # currently not used
+epochs_between_flip_loss: null
+flip_loss_scale: null
 
 # Training output
 max_batches: 500000

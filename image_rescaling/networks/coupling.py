@@ -10,7 +10,8 @@ class EnhancedCouplingOneSidedIRN(coupling_layers._BaseCouplingBlock):
                  subnet_constructor: Callable = None,
                  clamp: float = 1.,
                  clamp_activation: Union[str, Callable] = "SIGMOID",
-                 ):
+                 clamp_min: float = -1.,
+                 clamp_tightness: float = 1.): # clamp_tightness 1.0 == sigmoidal, clamp_tightness 2.0 = tanh, ...
         '''
         Additional args in docstring of base class.
         Args:
@@ -34,6 +35,9 @@ class EnhancedCouplingOneSidedIRN(coupling_layers._BaseCouplingBlock):
         # IRN paper explains that this is because "the shortcut connection is proved to be important in the image scaling tasks"
         self.split_len1 = 3
         self.split_len2 = self.channels - 3
+        
+        self.clamp_min = clamp_min
+        self.clamp_tightness = clamp_tightness
 
         self.phi = subnet_constructor(self.split_len2, self.split_len1) 
         # idea: try using batchnorm on these two?
@@ -56,7 +60,7 @@ class EnhancedCouplingOneSidedIRN(coupling_layers._BaseCouplingBlock):
         j = -1
         if rev:
             rho_x1 = self.rho(x1)
-            rho_x1 = self.clamp * self.f_clamp(rho_x1)
+            rho_x1 = self.clamp_min + (self.clamp - self.clamp_min) * (self.f_clamp(rho_x1 * self.clamp_tightness) + 1) / 2
             y2 = (x2 - self.mu(x1)) / torch.exp(rho_x1)
             y1 = x1 - self.phi(y2)
 
@@ -68,7 +72,7 @@ class EnhancedCouplingOneSidedIRN(coupling_layers._BaseCouplingBlock):
             # The IRN doesn't replace exp, but it does buffer it with sigmoid
             y1 = x1 + self.phi(x2)
             rho_y1 = self.rho(y1)
-            rho_y1 = self.clamp * self.f_clamp(rho_y1) # note that freia's SIGMOID clamp performs 2*sigmoid - 1 for us.
+            rho_y1 = self.clamp_min + (self.clamp - self.clamp_min) * (self.f_clamp(rho_y1 * self.clamp_tightness) + 1) / 2 # note that freia's SIGMOID clamp performs 2*sigmoid - 1 for us.
             y2 = x2 * torch.exp(rho_y1) + self.mu(y1)
             # TODO: Check that this jacobian calcuation is correct (not that we use it...)
             if jac: j = torch.sum(rho_y1, dim=tuple(range(1, self.ndims + 1)))
