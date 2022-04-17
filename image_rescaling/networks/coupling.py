@@ -8,8 +8,9 @@ import torch
 class EnhancedCouplingOneSidedIRN(coupling_layers._BaseCouplingBlock):
     def __init__(self, dims_in, dims_c=[],
                  subnet_constructor: Callable = None,
-                 clamp: float = 2.,
-                 clamp_activation: Union[str, Callable] = "SIGMOID"):
+                 clamp: float = 1.,
+                 clamp_activation: Union[str, Callable] = "SIGMOID",
+                 ):
         '''
         Additional args in docstring of base class.
         Args:
