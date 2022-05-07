@@ -6,35 +6,8 @@ import random
 import torch
 from sklearn.datasets import make_moons
 from sklearn.datasets import load_digits
-from utils import create_parent_dir
+from utils.utils import create_parent_dir
 import os
-
-class mnist8_iterator:
-    def __init__(self, shuffle_data=True):
-        self.dataset, _ = load_digits(return_X_y=True)
-        if shuffle_data: np.random.shuffle(self.dataset)
-
-        self.current_train_epoch = -1
-        self.prev_train_index = -1
-        self.prev_test_index = -1
-    
-    def iterate_mnist8_imgs(self, count=1, use_test_data=False):
-        test_limit = np.ceil(len(self.dataset) * 0.9)
-        samples = []
-        for j in range(count):
-            if not use_test_data:
-                self.prev_train_index = (self.prev_train_index + 1) % test_limit
-                if self.prev_train_index==0:
-                    self.current_train_epoch += 1
-                    #if self.current_train_epoch % 10 == 0: print(f'Starting epoch {self.current_train_epoch} over data')
-                i = self.prev_train_index
-            else:
-                self.prev_test_index = (self.prev_test_index + 1) % (len(self.dataset) - test_limit)
-                i = test_limit + self.prev_test_index
-
-            data = np.array(self.dataset[int(i)])
-            samples.append(data)
-        return samples
 
 def process_div2k_img(data, shape, verbose=False):
     im = np.array(data.detach().cpu().numpy())

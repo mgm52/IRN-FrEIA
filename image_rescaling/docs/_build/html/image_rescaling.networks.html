@@ -168,39 +168,39 @@ registered hooks while the latter silently ignores them.</p>
 
 </section>
 <section id="image-rescaling-networks-invertible-rescaling-network-module">
-<h2>image_rescaling.networks.invertible_rescaling_network module<a class="headerlink" href="#image-rescaling-networks-invertible-rescaling-network-module" title="Permalink to this headline"></a></h2>
+<h2>image_rescaling.models.layers.invertible_rescaling_network module<a class="headerlink" href="#image-rescaling-networks-invertible-rescaling-network-module" title="Permalink to this headline"></a></h2>
 </section>
-<section id="module-image_rescaling.networks.straight_through_estimator">
-<span id="image-rescaling-networks-straight-through-estimator-module"></span><h2>image_rescaling.networks.straight_through_estimator module<a class="headerlink" href="#module-image_rescaling.networks.straight_through_estimator" title="Permalink to this headline"></a></h2>
+<section id="module-image_rescaling.models.layers.straight_through_estimator">
+<span id="image-rescaling-networks-straight-through-estimator-module"></span><h2>image_rescaling.models.layers.straight_through_estimator module<a class="headerlink" href="#module-image_rescaling.models.layers.straight_through_estimator" title="Permalink to this headline"></a></h2>
 <dl class="py class">
-<dt class="sig sig-object py" id="image_rescaling.networks.straight_through_estimator.StraightThroughEstimator">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">image_rescaling.networks.straight_through_estimator.</span></span><span class="sig-name descname"><span class="pre">StraightThroughEstimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.networks.straight_through_estimator.StraightThroughEstimator" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="image_rescaling.models.layers.straight_through_estimator.StraightThroughEstimator">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">image_rescaling.models.layers.straight_through_estimator.</span></span><span class="sig-name descname"><span class="pre">StraightThroughEstimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.models.layers.straight_through_estimator.StraightThroughEstimator" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.autograd.function.Function</span></code></p>
 <dl class="py method">
-<dt class="sig sig-object py" id="image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.backward">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">backward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grad_output</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.backward" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="image_rescaling.models.layers.straight_through_estimator.StraightThroughEstimator.backward">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">backward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grad_output</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.models.layers.straight_through_estimator.StraightThroughEstimator.backward" title="Permalink to this definition"></a></dt>
 <dd><p>Defines a formula for differentiating the operation with backward mode
 automatic differentiation.</p>
 <p>This function is to be overridden by all subclasses.</p>
 <p>It must accept a context <code class="xref py py-attr docutils literal notranslate"><span class="pre">ctx</span></code> as the first argument, followed by
-as many outputs as the <a class="reference internal" href="#image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.forward" title="image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> returned (None will be passed in
+as many outputs as the <a class="reference internal" href="#image_rescaling.models.layers.straight_through_estimator.StraightThroughEstimator.forward" title="image_rescaling.models.layers.straight_through_estimator.StraightThroughEstimator.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> returned (None will be passed in
 for non tensor outputs of the forward function),
 and it should return as many tensors, as there were inputs to
-<a class="reference internal" href="#image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.forward" title="image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a>. Each argument is the gradient w.r.t the given output,
+<a class="reference internal" href="#image_rescaling.models.layers.straight_through_estimator.StraightThroughEstimator.forward" title="image_rescaling.models.layers.straight_through_estimator.StraightThroughEstimator.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a>. Each argument is the gradient w.r.t the given output,
 and each returned value should be the gradient w.r.t. the
 corresponding input. If an input is not a Tensor or is a Tensor not
 requiring grads, you can just pass None as a gradient for that input.</p>
 <p>The context can be used to retrieve tensors saved during the forward
 pass. It also has an attribute <code class="xref py py-attr docutils literal notranslate"><span class="pre">ctx.needs_input_grad</span></code> as a tuple
 of booleans representing whether each input needs gradient. E.g.,
-<a class="reference internal" href="#image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.backward" title="image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.backward"><code class="xref py py-func docutils literal notranslate"><span class="pre">backward()</span></code></a> will have <code class="docutils literal notranslate"><span class="pre">ctx.needs_input_grad[0]</span> <span class="pre">=</span> <span class="pre">True</span></code> if the
-first input to <a class="reference internal" href="#image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.forward" title="image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> needs gradient computated w.r.t. the
+<a class="reference internal" href="#image_rescaling.models.layers.straight_through_estimator.StraightThroughEstimator.backward" title="image_rescaling.models.layers.straight_through_estimator.StraightThroughEstimator.backward"><code class="xref py py-func docutils literal notranslate"><span class="pre">backward()</span></code></a> will have <code class="docutils literal notranslate"><span class="pre">ctx.needs_input_grad[0]</span> <span class="pre">=</span> <span class="pre">True</span></code> if the
+first input to <a class="reference internal" href="#image_rescaling.models.layers.straight_through_estimator.StraightThroughEstimator.forward" title="image_rescaling.models.layers.straight_through_estimator.StraightThroughEstimator.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> needs gradient computated w.r.t. the
 output.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.forward">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_fun</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.networks.straight_through_estimator.StraightThroughEstimator.forward" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="image_rescaling.models.layers.straight_through_estimator.StraightThroughEstimator.forward">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_fun</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.models.layers.straight_through_estimator.StraightThroughEstimator.forward" title="Permalink to this definition"></a></dt>
 <dd><p>Performs the operation.</p>
 <p>This function is to be overridden by all subclasses.</p>
 <p>It must accept a context ctx as the first argument, followed by any
@@ -212,13 +212,13 @@ retrieved during the backward pass.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="image_rescaling.networks.straight_through_estimator.quantize_ste">
-<span class="sig-prename descclassname"><span class="pre">image_rescaling.networks.straight_through_estimator.</span></span><span class="sig-name descname"><span class="pre">quantize_ste</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.networks.straight_through_estimator.quantize_ste" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="image_rescaling.models.layers.straight_through_estimator.quantize_ste">
+<span class="sig-prename descclassname"><span class="pre">image_rescaling.models.layers.straight_through_estimator.</span></span><span class="sig-name descname"><span class="pre">quantize_ste</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.models.layers.straight_through_estimator.quantize_ste" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="image_rescaling.networks.straight_through_estimator.quantize_to_int_ste">
-<span class="sig-prename descclassname"><span class="pre">image_rescaling.networks.straight_through_estimator.</span></span><span class="sig-name descname"><span class="pre">quantize_to_int_ste</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.networks.straight_through_estimator.quantize_to_int_ste" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="image_rescaling.models.layers.straight_through_estimator.quantize_to_int_ste">
+<span class="sig-prename descclassname"><span class="pre">image_rescaling.models.layers.straight_through_estimator.</span></span><span class="sig-name descname"><span class="pre">quantize_to_int_ste</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#image_rescaling.models.layers.straight_through_estimator.quantize_to_int_ste" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 </section>

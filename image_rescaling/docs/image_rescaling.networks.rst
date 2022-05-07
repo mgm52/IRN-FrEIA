@@ -31,7 +31,7 @@ image\_rescaling.networks.dense\_block module
 image\_rescaling.networks.invertible\_rescaling\_network module
 ---------------------------------------------------------------
 
-.. automodule:: image_rescaling.networks.invertible_rescaling_network
+.. automodule:: image_rescaling.models.layers.invertible_rescaling_network
    :members:
    :undoc-members:
    :show-inheritance:
@@ -39,7 +39,7 @@ image\_rescaling.networks.invertible\_rescaling\_network module
 image\_rescaling.networks.straight\_through\_estimator module
 -------------------------------------------------------------
 
-.. automodule:: image_rescaling.networks.straight_through_estimator
+.. automodule:: image_rescaling.models.layers.straight_through_estimator
    :members:
    :undoc-members:
    :show-inheritance:

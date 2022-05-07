@@ -1,2 +1,0 @@
-# Calcluate loss
-# Currently unused

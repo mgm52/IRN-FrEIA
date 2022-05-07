@@ -1,9 +1,9 @@
 import time
 from tracemalloc import start
-from networks.invertible_rescaling_network import IRN, sample_irn
-from visualize import mnist8_iterator, process_xbit_img, see_multiple_imgs, process_div2k_img
-from data import Div2KDataLoaders, DataLoaders
-from bicubic_pytorch.core import imresize
+from models.layers.invertible_rescaling_network import IRN, sample_irn
+from visualisation.visualise import mnist8_iterator, process_xbit_img, see_multiple_imgs, process_div2k_img
+from data.dataloaders import Div2KDataLoaders, DataLoaders
+from utils.bicubic_pytorch.core import imresize
 import torch
 from torchvision.utils import save_image
 import torchmetrics
@@ -15,7 +15,7 @@ import glob
 import os
 import random
 from test import rgb_to_y
-from loss import calculate_irn_loss
+from models.train.loss_irn import calculate_irn_loss
 import matplotlib.pyplot as plt
 
 def bgr2ycbcr(img, only_y=True):

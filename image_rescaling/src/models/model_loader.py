@@ -1,8 +1,25 @@
 import torch
 import time
+import yaml
+
+def load_config(cfg_filename):
+  with open("./configs/" + cfg_filename, "r") as inp:
+    try:
+      config = yaml.safe_load(inp)
+      print(f"Successfully loaded config:\n{config}")
+      return config
+    except yaml.YAMLError as ex:
+      # Todo: consider handling this exeption differently
+      raise ex
+
+def check_keys(d, keys):
+  for k in keys:
+    if k not in d:
+      raise Exception(f"Config file is missing key '{k}'. It was expected to contain keys:\n {keys}, but instead only contains keys:\n {list(d.keys())}.")
+  return True
 
 def save_network(inn, optimizer, epoch, min_training_loss, all_test_losses, all_test_psnr_y, name):
-    save_filename = f"saved_models/model_{int(time.time())}_{name}.pth"
+    save_filename = f"models/model_{int(time.time())}_{name}.pth"
 
     torch.save({
         "epoch": epoch,

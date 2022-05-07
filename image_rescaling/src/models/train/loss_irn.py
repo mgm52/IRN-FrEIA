@@ -1,12 +1,13 @@
+from turtle import stamp
 import torch
 import torch.nn.functional as F
-from bicubic_pytorch.core import imresize
-from networks.invertible_rescaling_network import quantize_ste
-from utils import rgb_to_y
+from utils.bicubic_pytorch.core import imresize
+from models.layers.invertible_rescaling_network import quantize_ste
+from utils.utils import rgb_to_y
 
 # Expects x to be in range [0, 1], y to be roughly in range [0, 1].
 # y_channel_usage in range [0, 1]
-def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, mean_y, std_y, batchnorm=False, mean_losses=False, quantize_recon=False, y_channel_usage=0):
+def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, mean_y, std_y, batchnorm=False, mean_losses=False, quantize_recon=False, y_channel_usage=0, stamp_size=0):
     # Purpose of Loss_Reconstruction: accurate upscaling
     # Might make sense to quantize x_recon because this means the model has more freedom - more "valid" outputs
     
@@ -31,6 +32,12 @@ def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_reco
         # [Param] What you need is probably a smoothed L1 (see discussion in .md file)
     if lambda_guide != 0:
         x_downscaled = imresize(x, scale=1.0/scale) #quantize_ste(imresize(x, scale=1.0/scale))
+        if stamp_size == 1:
+            y = y.clone()
+            y[:, :, 0] = torch.clamp(x_downscaled[:, :, 0], min=0, max=1)
+            y[:, :, -1] = torch.clamp(x_downscaled[:, :, -1], min=0, max=1)
+            y[:, :, :, 0] = torch.clamp(x_downscaled[:, :, :, 0], min=0, max=1)
+            y[:, :, :, -1] = torch.clamp(x_downscaled[:, :, :, -1], min=0, max=1)
         loss_guide = F.mse_loss(x_downscaled, y, reduction="sum")
         loss_guide = loss_guide / (y.numel() if mean_losses else y.shape[0])
 
@@ -51,7 +58,7 @@ def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_reco
     # Paper describes this as: -1 * sum [prob(x from dataset) * log2(prob(z in our normal dist))]
     # Because prob(x from dataset) is a constant: we have -1 * log2(prob(z in our normal dist))
     # Because surprisal in a standard normal dist is O(x^2): we have z^2
-    if lambda_distr != 0:
+    if lambda_distr != 0 and not (z is None):
         loss_distr = (z**2).sum()
         loss_distr = loss_distr / (z.numel() if mean_losses else z.shape[0])
     else:

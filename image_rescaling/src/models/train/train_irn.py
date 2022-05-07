@@ -2,26 +2,26 @@
 from argparse import ArgumentParser
 import time
 from tracemalloc import start
-from networks.invertible_rescaling_network import IRN, sample_irn
-from visualize import mnist8_iterator, process_xbit_img, see_multiple_imgs, process_div2k_img
-from data import Div2KDataLoaders, DataLoaders
-from bicubic_pytorch.core import imresize
-import config_loader
+from models.layers.invertible_rescaling_network import IRN, sample_irn
+from visualisation.visualise import mnist8_iterator, process_xbit_img, see_multiple_imgs, process_div2k_img
+from data.dataloaders import Div2KDataLoaders, DataLoaders
+from utils.bicubic_pytorch.core import imresize
+import models.model_loader
 import torch
 from torchvision.utils import save_image
 import torchmetrics
 import numpy as np
 import wandb
 from test import test_inn
-from network_saving import save_network, load_network
+from models.model_loader import save_network, load_network
 import math
 from timeit import default_timer as timer
-from utils import create_parent_dir
+from utils.utils import create_parent_dir
 import glob
 import os
-import config_loader
+import models.model_loader
 import random
-from loss import calculate_irn_loss
+from models.train.loss_irn import calculate_irn_loss
 from datetime import date
 import matplotlib.pyplot as plt
 plt.rcParams["font.family"] = "serif"
@@ -115,7 +115,7 @@ def crop_tensor_border(x, border):
 
 def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run_name="run"):
 
-    config_loader.check_keys(cfg,
+    models.model_loader.check_keys(cfg,
     [
         "max_batches", "max_epochs", "target_loss",
         "epochs_between_tests", "epochs_between_training_log", "epochs_between_samples", "epochs_between_saves", "epochs_between_flip_loss",
@@ -212,7 +212,7 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
         time_dataloading += stop-start
 
         start = timer()
-        x, y, z, x_recon_from_y, mean_y, std_y = sample_irn(inn, x, zerosample=cfg["zerosample"], sr_mode=cfg["sr_mode"])
+        x, y, z, x_recon_from_y, mean_y, std_y, ymod = sample_irn(inn, x, cfg)
         stop = timer()
         time_forward += stop - start
 
@@ -247,7 +247,7 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
         if False and batch_no % 5 == 0:
             with torch.no_grad():
                 blacksquare = torch.zeros(1, 3, x.shape[-1], x.shape[-1])
-                blacksquare, bs_y, bs_z, bs_x_recon_from_y, bs_mean_y, bs_std_y = sample_irn(inn, blacksquare, zerosample=cfg["zerosample"], sr_mode=cfg["sr_mode"])
+                blacksquare, bs_y, bs_z, bs_x_recon_from_y, bs_mean_y, bs_std_y, ymod = sample_irn(inn, blacksquare, cfg)
                 bsloss_recon, bsloss_guide, bsloss_distr, bsloss_batchnorm, bstotal_loss = calculate_irn_loss(cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], blacksquare, bs_y, bs_z, bs_x_recon_from_y, bs_mean_y, bs_std_y, mean_losses=cfg["mean_losses"], quantize_recon=cfg["quantize_recon_loss"], y_channel_usage=cfg["y_channel_usage"])
 
                 see_multiple_imgs([blacksquare[0].cpu().detach(), imresize(bs_y[0].cpu().detach(), 4), bs_x_recon_from_y[0].cpu().detach()], 1, 3,
@@ -269,8 +269,8 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
             print(f"We are sampling at {batch_no+1} batches, {epoch} epochs...")
             with torch.no_grad():
                 index_of_sample_image = 4
-                x, y, z, x_recon_from_y, mean_y, std_y = sample_irn(inn, dataloaders.test_dataloader.dataset[index_of_sample_image][0].unsqueeze(dim=0), zerosample=cfg["zerosample"], sr_mode=cfg["sr_mode"])
-            see_irn_example(x, y, z, x_recon_from_y, cfg["scale"], see=False, save=False, wandb_log=True, wandb_step=batch_no, img_name=all_test_losses[-1] if len(all_test_losses)>0 else "-", render_grid=False, metric_crop_border=cfg["scale"], folder_name=run_name, wandb_samples_table=False)
+                x, y, z, x_recon_from_y, mean_y, std_y, ymod = sample_irn(inn, dataloaders.test_dataloader.dataset[index_of_sample_image][0].unsqueeze(dim=0), cfg)
+            see_irn_example(x, y, z, x_recon_from_y, cfg["scale"], see=False, save=False, wandb_log=True, wandb_step=batch_no, img_name=all_test_losses[-1] if len(all_test_losses)>0 else "-", render_grid=False, metric_crop_border=cfg["scale"], folder_name=run_name, wandb_samples_table=True)
             #for j in range(2):
             #    see_irn_example(x, y, z, x_recon_from_y, see=False, save=False, name=all_test_losses[-1])
             epoch_prev_sample = epoch
@@ -287,7 +287,7 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
             print(f'In test dataset, in last {cfg["epochs_between_tests"] if epoch>0 else 0} epochs:')
 
             # Crop the border of test images by the resize scale to avoid capturing outliers (this is done in the IRN paper)
-            test_loss, test_psnr_rgb, test_psnr_y, test_ssim_RGB, test_ssim_Y, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], metric_crop_border=cfg["scale"], fast_gpu_testing=cfg["fast_gpu_testing"], mean_losses=cfg["mean_losses"], quantize_recon=cfg["quantize_recon_loss"], zerosample=cfg["zerosample"], y_channel_usage=cfg["y_channel_usage"], sr_mode=cfg["sr_mode"])
+            test_loss, test_psnr_rgb, test_psnr_y, test_ssim_RGB, test_ssim_Y, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], metric_crop_border=cfg["scale"], cfg=cfg)
             all_test_losses.append(test_loss)
             all_test_psnr_y.append(test_psnr_y)
             print("")
@@ -348,7 +348,7 @@ if __name__ == '__main__':
 
     configyaml = ""
     if args.config:
-        configyaml = config_loader.load_config(args.config)
+        configyaml = models.model_loader.load_config(args.config)
 
     resume_latest_run = args.resume_latest_run
     resume_run_id = args.run_id
@@ -376,11 +376,11 @@ if __name__ == '__main__':
     inn = IRN(3, config["img_size"], config["img_size"], cfg=config)
 
     if resume_file_name:
-        load_checkpoint_path = latest_file_in_folder("./saved_models", resume_file_name)
+        load_checkpoint_path = latest_file_in_folder("./models", resume_file_name)
     elif resume_run_id:
-        load_checkpoint_path = latest_file_in_folder("./saved_models", f"{run.id}.pth")
+        load_checkpoint_path = latest_file_in_folder("./models", f"{run.id}.pth")
     elif resume_latest_run:
-        load_checkpoint_path = latest_file_in_folder("./saved_models", ".pth")
+        load_checkpoint_path = latest_file_in_folder("./models", ".pth")
     else:
         load_checkpoint_path = ""
 

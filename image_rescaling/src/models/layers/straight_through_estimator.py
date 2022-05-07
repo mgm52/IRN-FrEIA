@@ -15,3 +15,4 @@ def quantize_ste(x):
 
 def quantize_to_int_ste(x):
     return StraightThroughEstimator.apply(x, lambda y : (torch.clamp(y, min=0, max=1) * 255.0).round().int())
+

@@ -4,8 +4,8 @@ import data as data_functions
 import torch
 import math
 import numpy as np
-from networks.freia_nets import get_inn_fc_freia
-from networks.pytorch_nets import get_inn_fc_pt
+from models.layers.freia_nets import get_inn_fc_freia
+from models.layers.pytorch_nets import get_inn_fc_pt
 from torchmetrics.image.fid import FrechetInceptionDistance
 from data import mnist8_iterator
 
@@ -27,13 +27,11 @@ def train_inn_fc_mnist8(inn, mnist8_iter, min_loss=0.8, max_iters=10000, pytorch
 
         if pytorch_mode:
             x = torch.tensor(data, dtype=torch.float32, device=device)
-            z, log_jac_det = inn(x)
-            loss = 0.5*torch.sum(z**2) - log_jac_det
-
         else:
             x = torch.Tensor(np.array([data]))
-            z, log_jac_det = inn(x)
-            loss = 0.5*torch.sum(z**2) - log_jac_det
+
+        z, log_det_jac = inn(x)
+        loss = 0.5*torch.sum(z**2) - log_det_jac
 
         loss = loss.mean() / (8*8)
         losses.append(loss)
@@ -104,37 +102,40 @@ def compute_log_likelihood(inn, device, pytorch_mode):
 
     return sum(log_likelihoods) / len(log_likelihoods)
 
-mnist8_iter = mnist8_iterator()
+####    EXECUTION CODE    ####
+if __name__ == '__main__':
 
-inn_freia = get_inn_fc_freia()
-inn_pt = get_inn_fc_pt(device=device)
+    mnist8_iter = mnist8_iterator()
 
-to_train=5000
-while True:
-    print("---------- STARTING TRAINING LOOP -------------")
-    print(to_train)
-    print("Training freia")
-    train_inn_fc_mnist8(inn_freia, mnist8_iter, -1, to_train, False)
-    print("Training pt")
-    train_inn_fc_mnist8(inn_pt, mnist8_iter, -1, to_train, True)
+    inn_freia = get_inn_fc_freia()
+    inn_pt = get_inn_fc_pt(device=device)
 
-    print("--- Viewing freia examples ---")
-    see_mnist8_results(inn_freia, 5, device="cpu")
-    print("--- Viewing pt examples ---")
-    see_mnist8_results(inn_pt, 5, device=device)
+    to_train=5000
+    while True:
+        print("---------- STARTING TRAINING LOOP -------------")
+        print(to_train)
+        print("Training freia")
+        train_inn_fc_mnist8(inn_freia, mnist8_iter, -1, to_train, False)
+        print("Training pt")
+        train_inn_fc_mnist8(inn_pt, mnist8_iter, -1, to_train, True)
 
-    # Higher likelihood better
-    ll_freia = compute_log_likelihood(inn_freia, device="cpu", pytorch_mode=False)
-    ll_pt = compute_log_likelihood(inn_pt, device=device, pytorch_mode=True)
+        print("--- Viewing freia examples ---")
+        see_mnist8_results(inn_freia, 5, device="cpu")
+        print("--- Viewing pt examples ---")
+        see_mnist8_results(inn_pt, 5, device=device)
 
-    print(f'FrEIA log likelihood: {ll_freia}')
-    print(f'Pytorch log likelihood: {ll_pt}')
+        # Higher likelihood better
+        ll_freia = compute_log_likelihood(inn_freia, device="cpu", pytorch_mode=False)
+        ll_pt = compute_log_likelihood(inn_pt, device=device, pytorch_mode=True)
 
-    # Lower fid better
-    fid_freia = compute_mnist8_fid_score(inn_freia, device="cpu")
-    fid_pt = compute_mnist8_fid_score(inn_pt, device=device)
+        print(f'FrEIA log likelihood: {ll_freia}')
+        print(f'Pytorch log likelihood: {ll_pt}')
 
-    print(f'FrEIA FID: {fid_freia.item()}')
-    print(f'Pytorch FID: {fid_pt.item()}')
+        # Lower fid better
+        fid_freia = compute_mnist8_fid_score(inn_freia, device="cpu")
+        fid_pt = compute_mnist8_fid_score(inn_pt, device=device)
 
-    to_train *= 2
+        print(f'FrEIA FID: {fid_freia.item()}')
+        print(f'Pytorch FID: {fid_pt.item()}')
+
+        to_train *= 2

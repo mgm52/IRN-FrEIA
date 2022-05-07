@@ -4,8 +4,7 @@ from tokenize import Double
 from FrEIA.modules.reshapes import HaarDownsampling
 from FrEIA.modules.invertible_resnet import ActNorm
 from .coupling import AffineCouplingOneSidedIRN, EnhancedCouplingOneSidedIRN
-from bicubic_pytorch.core import imresize
-from visualize import mnist8_iterator
+from utils.bicubic_pytorch.core import imresize
 import wandb
 import FrEIA.framework as ff
 import numpy as np
@@ -13,10 +12,10 @@ from typing import Iterable, Tuple, List
 import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
-import config_loader
+import models.model_loader
 from networks.dense_block import db_subnet
-from data import DataLoaders
-from networks.straight_through_estimator import quantize_ste, quantize_to_int_ste
+from data.dataloaders import DataLoaders
+from models.layers.straight_through_estimator import quantize_ste, quantize_to_int_ste
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 torch.set_printoptions(linewidth=200)
