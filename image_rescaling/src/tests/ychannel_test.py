@@ -1,8 +1,8 @@
 import time
 from tracemalloc import start
 from models.layers.invertible_rescaling_network import IRN, sample_irn
-from visualisation.visualise import mnist8_iterator, process_xbit_img, see_multiple_imgs, process_div2k_img
-from data.dataloaders import Div2KDataLoaders, DataLoaders
+from visualisation.visualise import process_xbit_img, see_multiple_imgs, process_div2k_img
+from data.dataloaders import DatasetDataLoaders, DataLoaders
 from utils.bicubic_pytorch.core import imresize
 import torch
 from torchvision.utils import save_image
@@ -14,7 +14,7 @@ from timeit import default_timer as timer
 import glob
 import os
 import random
-from test import rgb_to_y
+from utils.utils import rgb_to_y
 from models.train.loss_irn import calculate_irn_loss
 import matplotlib.pyplot as plt
 
@@ -40,6 +40,8 @@ def bgr2ycbcr(img, only_y=True):
     else:
         rlt /= 255.
     return rlt.astype(in_img_type)
+
+##### CODE ABOVE THIS LINE IS IMPORTED FROM IRN (Xiao et al) FOR THE SAKE OF UNIT TESTING #####
 
 def test_ychannel():
     diffs = []

@@ -7,7 +7,7 @@ from utils.utils import rgb_to_y
 
 # Expects x to be in range [0, 1], y to be roughly in range [0, 1].
 # y_channel_usage in range [0, 1]
-def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, mean_y, std_y, batchnorm=False, mean_losses=False, quantize_recon=False, y_channel_usage=0, stamp_size=0):
+def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_recon_from_y, mean_y, std_y, batchnorm=False, mean_losses=False, quantize_recon=False, y_channel_usage=0, stamp_size=0, y_guide_only=False):
     # Purpose of Loss_Reconstruction: accurate upscaling
     # Might make sense to quantize x_recon because this means the model has more freedom - more "valid" outputs
     
@@ -18,7 +18,7 @@ def calculate_irn_loss(lambda_recon, lambda_guide, lambda_distr, x, y, z, x_reco
     loss_recon = torch.sum(torch.sqrt((x_recon_quant - x)**2 + 0.000001)) #F.l1_loss(x, x_recon_quant, reduction="sum")# + torch.abs(torch.std(x, axis=1) - torch.std(x_recon_from_y, axis=1)).mean()
     loss_recon = loss_recon / (x.numel() if mean_losses else x.shape[0])
 
-    if y_channel_usage != 0:
+    if y_channel_usage != 0 and not y_guide_only:
         loss_recon_ych = torch.sum(torch.sqrt((rgb_to_y(x_recon_quant) - rgb_to_y(x))**2 + 0.000001)) #F.l1_loss(x, x_recon_quant, reduction="sum")# + torch.abs(torch.std(x, axis=1) - torch.std(x_recon_from_y, axis=1)).mean()
         loss_recon_ych = loss_recon_ych / (x.numel() if mean_losses else x.shape[0])
         # 0.858745 = (0.92149 - 0.062745) = max value of y_channel difference

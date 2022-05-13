@@ -1,31 +1,20 @@
 from math import floor, log2
-import time
 from tokenize import Double
 from FrEIA.modules.reshapes import HaarDownsampling
 from FrEIA.modules.invertible_resnet import ActNorm
-from .coupling import AffineCouplingOneSidedIRN, EnhancedCouplingOneSidedIRN
+from .coupling import EnhancedCouplingOneSidedIRN
 from utils.bicubic_pytorch.core import imresize
-from visualisation.visualise import mnist8_iterator
-import wandb
 import FrEIA.framework as ff
 import numpy as np
-from typing import Iterable, Tuple, List
+from typing import List
 import models.layers.straight_through_estimator
+from data.make_dataset_compress import jpeg_compress_random
 import torch
 from utils.utils import standardise_tensor
-import torch.nn as nn
-import matplotlib.pyplot as plt
 import models.model_loader
 from models.layers.dense_block import db_subnet
-from data.dataloaders import DataLoaders
 from models.layers.batchnorm_seq import BatchnormSequenceINN
 from models.layers.straight_through_estimator import quantize_ste, quantize_to_int_ste
-from PIL import Image
-import math
-from io import BytesIO
-import random
-from torchvision.transforms import ToTensor
-from torchvision.transforms import ToPILImage
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 torch.set_printoptions(linewidth=200)
@@ -53,23 +42,8 @@ def IRN(*dims, cfg):
             if cfg["actnorm"]: inn.append(ActNorm)
     return inn.cuda() if device=="cuda" else inn
 
-def compress_jpeg_random(image_t, quality = -1, save_path=""):
-    image = ToPILImage()(image_t)
-    outputIoStream = BytesIO()
-
-    if quality < 0:
-        if random.choice([True, False]):
-            return image_t
-        quality = random.randrange(10, 100)
-    #print(f"Compressing with quality {quality}")
-    image.save(outputIoStream, "JPEG", quality=int(quality), optimize=True)
-    if save_path: image.save(save_path, "JPEG", quality=int(quality), optimize=True)
-
-    outputIoStream.seek(0)
-    return (ToTensor()(Image.open(outputIoStream))).cuda()
-
 def compress_batch(imgs, quality = -1, path=""):
-  imgs_cmpr = torch.cat([compress_jpeg_random(img, quality, path).unsqueeze(0) for img in imgs])
+  imgs_cmpr = torch.cat([jpeg_compress_random(img, quality, path).unsqueeze(0) for img in imgs])
   return imgs_cmpr
 
 def compress_ste(x, quality = -1, path=""):

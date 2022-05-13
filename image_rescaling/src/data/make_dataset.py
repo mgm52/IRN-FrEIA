@@ -2,16 +2,16 @@ import time
 from tracemalloc import start
 from torchvision import transforms
 from models.layers.invertible_rescaling_network import IRN, sample_irn, multi_sample_irn
-from visualize import mnist8_iterator, process_xbit_img, see_multiple_imgs, process_div2k_img
-import config_loader
-from data import Div2KDataLoaders, DataLoaders, get_test_dataloader
-from bicubic_pytorch.core import imresize
+from visualisation.visualise import process_xbit_img, see_multiple_imgs, process_div2k_img
+import models.model_loader
+from data.dataloaders import Div2KDataLoaders, DataLoaders, get_test_dataloader
+from utils.bicubic_pytorch.core import imresize
 import torch
 from torchvision.utils import save_image
 import torchmetrics
 import numpy as np
 import wandb
-from network_saving import save_network, load_network
+from models.model_loader import save_network, load_network
 import math
 from timeit import default_timer as timer
 from models.layers.invertible_rescaling_network import quantize_ste

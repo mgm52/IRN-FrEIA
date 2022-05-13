@@ -20,7 +20,7 @@ class DataLoaders:
     def __init__(self, train_dataloader, test_dataloader, sample_shape):
         self.train_dataloader: DataLoader = train_dataloader
         self.test_dataloader: DataLoader = test_dataloader
-        self.train_len = len(self.train_dataloader.dataset)
+        self.train_len = len(self.train_dataloader.dataset) if self.train_dataloader else None
         self.test_len = len(self.test_dataloader.dataset)
         self.sample_shape = sample_shape
 
@@ -105,28 +105,30 @@ def get_test_dataloader(path, test_img_size_divisor=1, img_crop_size=None):
 
 # NOTE: the paper crops full-sized test images by a border equal to the scaling factor being trained on (e.g. 2x).
 # I suppose this is because it believes the border pixels to be less accurate?
-def Div2KDataLoaders(batch_size, img_size=64, shuffle_training_data=True, full_size_test_imgs=False, test_img_size_divisor=2):
-    #training_data = Div2K(root="./data", scale=4, split="train", track="bicubic", transform=ToTensor(), download=False)
-    #testing_data = Div2K(root="./data", scale=8, split="test", track="bicubic", transform=ToTensor(), download=False)
+def DatasetDataLoaders(batch_size, img_size=64, shuffle_training_data=True, full_size_test_imgs=False, test_img_size_divisor=2, train_path="DIV2K/DIV2K_train_HR", test_path="DIV2K/DIV2K_valid_HR"):
+    #training_data = Div2K(root="../data", scale=4, split="train", track="bicubic", transform=ToTensor(), download=False)
+    #testing_data = Div2K(root="../data", scale=8, split="test", track="bicubic", transform=ToTensor(), download=False)
     print(f"Loading div2k data with imgsize={img_size}, shuffle={shuffle_training_data}, fullsizetest={full_size_test_imgs}, testsizedivisor={test_img_size_divisor}")
     
-    transform = transforms.Compose([
-        transforms.RandomCrop(img_size),
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomVerticalFlip(p=0.5),
-        transforms.RandomApply([transforms.RandomRotation((90, 90))], p=0.5),
-        transforms.ToTensor()
-    ])
-    dataset = SingleClassImageFolder("./data/DIV2K/DIV2K_train_HR", transform=transform)
-    train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle_training_data, num_workers=6)
-    print(f"Loaded {len(dataset)} training images")
+    train_dataloader = None
+    if train_path:
+        transform = transforms.Compose([
+            transforms.RandomCrop(img_size),
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomVerticalFlip(p=0.5),
+            transforms.RandomApply([transforms.RandomRotation((90, 90))], p=0.5),
+            transforms.ToTensor()
+        ])
+        dataset = SingleClassImageFolder(f"../data/{train_path}", transform=transform)
+        train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle_training_data, num_workers=6)
+        print(f"Loaded {len(dataset)} training images")
 
-    test_imgs_path = "./data/DIV2K/DIV2K_valid_HR"
+    test_imgs_path = f"../data/{test_path}"
     if full_size_test_imgs:
         test_dataloader = get_test_dataloader(test_imgs_path, test_img_size_divisor)
     else:
         test_dataloader = get_test_dataloader(test_imgs_path, img_crop_size=img_size)
-    print(f"Loaded {len(dataset)} test images")
+    
 
     return DataLoaders(train_dataloader, test_dataloader, sample_shape=(3, img_size, img_size))    
 

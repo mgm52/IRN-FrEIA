@@ -1,8 +1,8 @@
 import time
 from tracemalloc import start
 from models.layers.invertible_rescaling_network import IRN, sample_irn
-from visualisation.visualise import mnist8_iterator, process_xbit_img, see_multiple_imgs, process_div2k_img
-from data.dataloaders import Div2KDataLoaders, DataLoaders
+from visualisation.visualise import process_xbit_img, see_multiple_imgs, process_div2k_img
+from data.dataloaders import DatasetDataLoaders, DataLoaders
 from utils.bicubic_pytorch.core import imresize
 import torch
 from torchvision.utils import save_image
@@ -154,6 +154,8 @@ def imresize_np(img, scale, antialiasing=True):
         out_2[:, i, 2] = out_1_aug[:, idx:idx + kernel_width, 2].mv(weights_W[i])
 
     return out_2.numpy()
+
+##### CODE ABOVE THIS LINE IS IMPORTED FROM IRN (Xiao et al) FOR THE SAKE OF UNIT TESTING #####
 
 def test_resize():
     x = torch.rand(1, 3, 2000, 2500)

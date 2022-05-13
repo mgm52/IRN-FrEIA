@@ -3,7 +3,7 @@ import time
 import yaml
 
 def load_config(cfg_filename):
-  with open("./configs/" + cfg_filename, "r") as inp:
+  with open("../configs/" + cfg_filename, "r") as inp:
     try:
       config = yaml.safe_load(inp)
       print(f"Successfully loaded config:\n{config}")
@@ -36,5 +36,7 @@ def load_network(inn, path, optimizer=None):
     checkpoint = torch.load(path)
     inn.load_state_dict(checkpoint['model_state_dict'])
     if optimizer is not None: optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+    print(f"Loaded model at epoch {checkpoint.get('epoch', 0)}")
 
     return inn, optimizer, checkpoint.get("epoch", 0), checkpoint.get("min_training_loss", 99999), checkpoint.get("min_test_loss", 99999), checkpoint.get("max_test_psnr_y", -999)

@@ -8,6 +8,7 @@ from sklearn.datasets import make_moons
 from sklearn.datasets import load_digits
 from utils.utils import create_parent_dir
 import os
+import textwrap
 
 def process_div2k_img(data, shape, verbose=False):
     im = np.array(data.detach().cpu().numpy())
@@ -48,7 +49,7 @@ def process_xbit_img(data, shape, clip_values=True, floor_values=True, bits=4, s
 
     return im
 
-def see_multiple_imgs(imgs, rows, cols, row_titles=[], plot_titles=[], see=True, save=False, filename="out", smallSize=False):
+def see_multiple_imgs(imgs, rows, cols, row_titles=[], plot_titles=[], see=True, save=False, filename="out", smallSize=False, pdf=False, bottomtitle=False, wrap_text=False):
     if len(imgs)==0: return None
     assert rows*cols >= len(imgs), f'Cannot print {len(imgs)} images on a {rows}x{cols} grid'
     
@@ -61,14 +62,14 @@ def see_multiple_imgs(imgs, rows, cols, row_titles=[], plot_titles=[], see=True,
             if row_num-1<len(row_titles): row_ax.set_title(row_titles[row_num-1] + "\n", fontsize=14, loc="left")
             row_ax.axis('off')
     elif rows==1 and len(row_titles)==1:
-        plt.title(row_titles[0])
+        plt.title(row_titles[0], y=-0.01 if bottomtitle else 0)
 
     maximgsize = max(imgs[0].shape)
 
     for i in range(1, rows*cols + 1):
         # Add subplot to index i-1 within a rows*cols grid
         ax = f.add_subplot(rows,cols,i)
-        if i-1<len(plot_titles): ax.set_title(plot_titles[i-1], fontsize=int(9.0 + maximgsize * 2.0/100.0), loc="left")
+        if i-1<len(plot_titles): ax.set_title(textwrap.fill(plot_titles[i-1], 30) if wrap_text else plot_titles[i-1], fontsize=12, loc="left") #fontsize=int(9.0 + maximgsize * 2.0/100.0)
         if i-1<len(imgs) and not (imgs[i-1] is None):
             if len(imgs[i-1].shape) == 4 and imgs[i-1].shape[0] == 1:
                 imgs[i-1] = imgs[i-1][0]
@@ -83,11 +84,12 @@ def see_multiple_imgs(imgs, rows, cols, row_titles=[], plot_titles=[], see=True,
     else:
         f.set_size_inches(cols * maximgsize * 7.5/256.0, rows * maximgsize * 9/256.0)
 
+    if rows == 1: axes.axis("off")
     plt.axis("off")
 
     if(save):
         create_parent_dir(filename)
-        plt.savefig(filename + '.png', dpi=200)
+        plt.savefig(filename + ('.pdf' if pdf else '.png'), dpi=200, bbox_inches='tight')
     if(see): plt.show()
     if(not see): plt.close()
 

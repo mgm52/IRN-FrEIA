@@ -45,6 +45,8 @@ def calculate_ssim(img1, img2):
     else:
         raise ValueError('Wrong input image dimensions.')
 
+##### CODE ABOVE THIS LINE IS IMPORTED FROM IRN (Xiao et al) FOR THE SAKE OF UNIT TESTING #####
+
 def ssim_test(minv=0, maxv=255, x=None, y=None):
     ssim_metric = torchmetrics.StructuralSimilarityIndexMeasure(data_range=maxv-minv)
 
@@ -79,7 +81,7 @@ def ssim_test(minv=0, maxv=255, x=None, y=None):
     print(f"ERROR: {ssim_err}")
 
 
-def ssim_tests():
+def test_ssim_ranges():
     #torch.manual_seed(10)
     #random.seed(10)
     #np.random.seed(10)
@@ -94,4 +96,4 @@ def ssim_tests():
         ssim_test(0, 255, x, y)
 
 if __name__ == '__main__':
-    ssim_tests()
+    test_ssim_ranges()

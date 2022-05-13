@@ -1,7 +1,7 @@
 import time
 from tracemalloc import start
 from torchvision import transforms
-from dataloaders import Div2KDataLoaders, DataLoaders, get_test_dataloader
+from dataloaders import DatasetDataLoaders, DataLoaders, get_test_dataloader
 from utils.bicubic_pytorch.core import imresize
 import torch
 from timeit import default_timer as timer
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     quality = 100
 
     # load div2k
-    dataloaders = Div2KDataLoaders(16, 144, full_size_test_imgs=True, test_img_size_divisor=scale)
+    dataloaders = DatasetDataLoaders(16, 144, full_size_test_imgs=True, test_img_size_divisor=scale)
     test_iter = iter(dataloaders.test_dataloader)
 
     for i in range(dataloaders.test_len):

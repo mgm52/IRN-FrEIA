@@ -3,8 +3,8 @@ from argparse import ArgumentParser
 import time
 from tracemalloc import start
 from models.layers.invertible_rescaling_network import IRN, sample_irn
-from visualisation.visualise import mnist8_iterator, process_xbit_img, see_multiple_imgs, process_div2k_img
-from data.dataloaders import Div2KDataLoaders, DataLoaders
+from visualisation.visualise import process_xbit_img, see_multiple_imgs, process_div2k_img
+from data.dataloaders import DatasetDataLoaders, DataLoaders
 from utils.bicubic_pytorch.core import imresize
 import models.model_loader
 import torch
@@ -12,7 +12,7 @@ from torchvision.utils import save_image
 import torchmetrics
 import numpy as np
 import wandb
-from test import test_inn
+from models.test.test_rescaling import test_inn
 from models.model_loader import save_network, load_network
 import math
 from timeit import default_timer as timer
@@ -241,7 +241,7 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
                 plt_titles.append(basics)
             see_multiple_imgs(x_and_xrecon_and_diff_imgs, 3, x.shape[0],
                 row_titles=[f"lr, lg, ld, lt: {(float(loss_recon), float(loss_guide), float(loss_distr), float(total_loss))}.\nxmin={x.min()} ymim={y.min()} reconmin={x_recon_from_y.min()}\n\n\n\n"],
-                plot_titles=plt_titles, see=False, save=True, filename=f"output/debug/{run_name}/{int(time.time())}_{batch_no}_{int(total_loss)}", smallSize=False)
+                plot_titles=plt_titles, see=False, save=True, filename=f"../output/debug/{run_name}/{int(time.time())}_{batch_no}_{int(total_loss)}", smallSize=False)
             epoch_prev_spikeimg = epoch
 
         if False and batch_no % 5 == 0:
@@ -287,7 +287,7 @@ def train_inn(inn, dataloaders: DataLoaders, cfg, load_checkpoint_path=None, run
             print(f'In test dataset, in last {cfg["epochs_between_tests"] if epoch>0 else 0} epochs:')
 
             # Crop the border of test images by the resize scale to avoid capturing outliers (this is done in the IRN paper)
-            test_loss, test_psnr_rgb, test_psnr_y, test_ssim_RGB, test_ssim_Y, test_lossr, test_lossg, test_lossd = test_inn(inn, dataloaders, cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], metric_crop_border=cfg["scale"], cfg=cfg)
+            test_psnr_rgb, test_psnr_y, test_ssim_RGB, test_ssim_Y, test_lossr, test_lossg, test_lossd, test_loss = test_inn(inn, dataloaders, cfg["lambda_recon"], cfg["lambda_guide"], cfg["lambda_distr"], metric_crop_border=cfg["scale"], cfg=cfg)
             all_test_losses.append(test_loss)
             all_test_psnr_y.append(test_psnr_y)
             print("")
@@ -370,7 +370,7 @@ if __name__ == '__main__':
 
 
     # Load the data
-    dataloaders = Div2KDataLoaders(config.batch_size, config.img_size, full_size_test_imgs=config.full_size_test_imgs, test_img_size_divisor=config.scale)
+    dataloaders = DatasetDataLoaders(config.batch_size, config.img_size, full_size_test_imgs=config.full_size_test_imgs, test_img_size_divisor=config.scale)
 
     # Load the network
     inn = IRN(3, config["img_size"], config["img_size"], cfg=config)
