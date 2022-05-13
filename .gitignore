@@ -14,8 +14,11 @@
 /image_rescaling/docs/*
 /image_rescaling/output/training/*
 /image_rescaling/models/*
-/image_rescaling/wandb
+/image_rescaling/remote/wandb/*
 /image_rescaling/debug_imgs
+/image_rescaling/src/models/model_*
+/image_rescaling/src/wandb/*
+/image_rescaling/src/wandb/
 machine.file.*
 /debug_imgs
 

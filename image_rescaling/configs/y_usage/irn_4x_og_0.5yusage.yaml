@@ -10,6 +10,8 @@ zerosample: False
 clamp: 1.0
 clamp_min: -1.0
 clamp_tightness: 1.0
+sr_mode: False
+compression_mode: False
 
 # Training
 batch_size: 16

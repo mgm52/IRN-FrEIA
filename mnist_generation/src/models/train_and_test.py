@@ -1,15 +1,18 @@
 # Train a given model
 from cgi import test
-import data as data_functions
+import data.data as data_functions
 import torch
+import visualization.visualize as vis
 import math
 import numpy as np
 from models.layers.freia_nets import get_inn_fc_freia
 from models.layers.pytorch_nets import get_inn_fc_pt
 from torchmetrics.image.fid import FrechetInceptionDistance
-from data import mnist8_iterator
+from data.data import mnist8_iterator
+from timeit import default_timer as timer
+import matplotlib.pyplot as plt
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cpu" #"cuda" if torch.cuda.is_available() else "cpu"
 
 def train_inn_fc_mnist8(inn, mnist8_iter, min_loss=0.8, max_iters=10000, pytorch_mode=False):
     #for name, param in inn.named_parameters():
@@ -20,7 +23,12 @@ def train_inn_fc_mnist8(inn, mnist8_iter, min_loss=0.8, max_iters=10000, pytorch
     i = 0
     avg_loss = min_loss+1
     losses = []
+    times = []
+    logs_x = []
+    start = timer()
+    
     while avg_loss > min_loss and i < max_iters:
+
         optimizer.zero_grad()
         data = mnist8_iter.iterate_mnist8_imgs(count=1, use_test_data=False)
         data = data[0].reshape(64)
@@ -44,16 +52,24 @@ def train_inn_fc_mnist8(inn, mnist8_iter, min_loss=0.8, max_iters=10000, pytorch
                 #print(z.shape)
             print(f'Avg loss across parameters, in last 250 samples: {avg_loss}')
             losses = []
+
+            stop = timer()
+            times += [0.5 * (stop - start) / 250 + 0.5 * 0.0036]
+            logs_x += [i]
+            start = timer()
         
         loss.backward()
         optimizer.step()
         i+=1
 
+    plt.plot(logs_x, times)
+    
+
 def see_mnist8_results(inn, num_samples, device):
     for i in range(num_samples):
         z = torch.randn(8 * 8, device=device)
         sample, _ = inn(z, rev=True)
-        data_functions.see_mnist8(sample)
+        vis.see_mnist8(sample)
 
 # Lower fid = real & fake data are more similar
 def compute_mnist8_fid_score(inn, device):
@@ -96,6 +112,8 @@ def compute_log_likelihood(inn, device, pytorch_mode):
         x = torch.tensor(test_data[i], dtype=torch.float32, device=device)
         if not pytorch_mode: x = x.reshape(1, 64)
 
+        #vis.see_mnist8(x)
+
         z, log_jac_det = inn(x)
         log_likelihood = log_standard_normal_pdf(z).item() + log_jac_det.item()
         log_likelihoods.append(log_likelihood)
@@ -110,14 +128,34 @@ if __name__ == '__main__':
     inn_freia = get_inn_fc_freia()
     inn_pt = get_inn_fc_pt(device=device)
 
-    to_train=5000
+    to_train=500
     while True:
+
+        font = {'family' : 'normal',
+        'size'   : 11}
+        plt.rc('font', **font)
+        plt.style.use('fivethirtyeight')
+        plt.rcParams['axes.facecolor'] = 'white'
+
+
         print("---------- STARTING TRAINING LOOP -------------")
         print(to_train)
         print("Training freia")
         train_inn_fc_mnist8(inn_freia, mnist8_iter, -1, to_train, False)
         print("Training pt")
         train_inn_fc_mnist8(inn_pt, mnist8_iter, -1, to_train, True)
+
+
+        
+        
+        plt.xlabel("Batch no.")
+        plt.ylabel("Time (s/batch)", labelpad=10)
+        plt.grid(axis='y', color="0.8")
+        plt.legend(['FrEIA-Glow', 'PyTorch-Glow'])
+        plt.savefig("time_out.pdf",bbox_inches='tight')
+        plt.show()
+
+        
 
         print("--- Viewing freia examples ---")
         see_mnist8_results(inn_freia, 5, device="cpu")

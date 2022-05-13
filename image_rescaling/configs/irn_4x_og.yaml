@@ -10,6 +10,8 @@ zerosample: False
 clamp: 1.0
 clamp_min: -1.0
 clamp_tightness: 1.0
+sr_mode: False
+compression_mode: False
 
 # Training
 batch_size: 16
@@ -37,6 +39,8 @@ epochs_between_tests: 100
 epochs_between_training_log: 1
 epochs_between_samples: 25
 epochs_between_saves: 10
+epochs_between_flip_loss: null
+flip_loss_scale: null
 
 # Testing
 full_size_test_imgs: True

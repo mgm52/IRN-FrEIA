@@ -1,9 +1,7 @@
 # Invertible Image Rescaling with FrEIA
 
-This is a reimplementation of [Invertible Image Rescaling](https://github.com/pkuxmq/Invertible-Image-Rescaling) using the [Freia](https://github.com/VLL-HD/FrEIA) framework
+This is a reimplementation of [Invertible Image Rescaling](https://github.com/pkuxmq/Invertible-Image-Rescaling) using the [Freia](https://github.com/VLL-HD/FrEIA) framework.
 
-*Example results on DIV2K test set after 200 epochs (4 hours training time on an Tesla P100 GPU):*
-![Example output!](/output/5e7d329f-7605-4491-82c5-b5f8ac1899aa.png "Example output")
 ## Links
 CORE PAPER
 - Invertible image rescaling https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460120.pdf
@@ -57,41 +55,3 @@ HPC
 OTHER
 - Simple normalizing flow explanation https://stats.stackexchange.com/questions/414847/difference-between-invertible-nn-and-flow-based-nn
 - Scientific Linux 7 http://ftp.scientificlinux.org/linux/scientific/7x/x86_64/iso/
-
-## Todo
-
-### Immediate next steps
-
-~~- Output test metrics: PSNR and FID, and log-likelihood for mnist generation~~
-- ~~Train on higher resolutions making use of pytorch DataLoader~~
-- ~~Investigate why using ActNorm makes my pytorch implementation deviate more from FrEIA, and why FrEIA doesn't seem to quite use actnorm in allinone (?) (<-- solved, it's because parameters weren't being trained)~~
-- Investigate GPU server performance issues and train for a longer period of time
-  - Run the author's code on own GPU to compare performance
-  - Log time spent doing different activities (data loading, forward pass, backward pass) to look for bottlenecks
-  - I'm surprised to still see some gradient explosion using the author's parameters. Track gradient explosion more carefully by logging samples that lead to explosion?
-  - Look into getting Wilkes3 access if I determine the P100 isn't fast enough to train 500k batches (10K epochs) in 1 week
-  - Train for more than 12 hours by reloading model over multiple jobs
-- Clean up and comment on code
-  - Better folder organisation
-  - Potentially more generalisable functions
-- Test on other datasets (SET5, etc)
-- Write tests
-- Consider organising code into access, assess, address format (neil's "fynesse" template)
-
-
-### Writeup details
-
-- Idea: draw a grid explaining the differences between compression and our rescaling task, and maybe fitting the "stamped downscaling" idea in between the two
-
-- Idea: do some math as to the relationship between L2 Guidance Loss (how much our downscaled images deviate from bicubic) and how much information they encode to help us upscale (assuming no knowledge of the dataset from which input images are drawn). Theoretically, if the downscaling process is allowed to deviate 100% away from bicubic, it should be equivalent to a really good lossy compression
-  - Flaw with this idea: there are probably multiple ways to compress stuff and may be difficult to get a single absolute rating for how much information we encode by deviating
-  - Could relate to rate-distortion theory: https://en.wikipedia.org/wiki/Rate%E2%80%93distortion_theory
- 
- - Can include explanation of JSD and how it can be substituted for our surrogate Loss_distr, which is an approximation of cross-entropy
-
- - From what I can tell, there isn't a single decided metric for evaluating models at the image rescaling task. Instead we have two metrics: reconstruction PSNR and downscaling PSNR.
-   - Perhaps I could discuss the merits of different ways of combining these metrics
-   - Discuss what the "minimum" downscaling PSNR should be in order to create perceptually identitical downscaled images.
-   - Look into other metrics for evaluating downscaled images. Why not take the PSNR of the downscaled image against GT?
-   - Could do a 3D plot of "downscale PSNR" on X axis, "upscale PSNR" on Y axis, and "model parameters" on Z axis to compare different models.
-   - NOTE: I've observed that decreasing loss_guidance leads to good reconstruction far far more quickly, and produces a sharper downscaled image. Can I evaluate this somehow?
