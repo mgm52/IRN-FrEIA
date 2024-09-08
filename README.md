@@ -26,28 +26,13 @@ COMPETING PAPERS
   - DIV2K 4x PSNR/SSIM: 35.23/0.9346, 4.4M params
 - FGRN: Approaching the Limit of Image Rescaling via Flow Guidance https://arxiv.org/pdf/2111.05133.pdf
   - Uses two non-invertible networks for `compressed<->upscaled`, one invertible network for `compressed<->downscaled`. I am slightly dubious as to how useful that really is.
-  - In section 4.5, they train an IRN with z=0 instead of resampling z, and find that it achieves similar results. They conclude that this means z does not encode the information lost in downscaling. I think they misunderstand the purpose of z. Better experiments might be to try sampling around z=0 and see if the samples achieve similar PSNR (I expect they would do if Z~N(0,1), but might not if Z=0).
+  - In section 4.5, they train an IRN with z=0 instead of resampling z, and find that it achieves similar results. They conclude that this means z does not encode the information lost in downscaling. I think they might misunderstand the purpose of z. Better experiments could be to try sampling around z=0 and see if the samples achieve similar PSNR (I expect they would do if Z~N(0,1), but might not if Z=0).
   - DIV2K 4x PSNR/SSIM: 35.15/0.9322, 3.35M params
 - AIDN: Scale-arbitrary Invertible Image Downscaling https://arxiv.org/pdf/2201.12576.pdf
   - Outperforms IRN on not-power-of-two image rescaling
   - DIV2K 4x PSNR/SSIM: 34.94/?, 3.8M params
 
-WORKSHOPS ETC
-- CLIC (March 23, 4 pages inc references) http://compression.cc/cfp/
-- Siggraph student research poster competition (April 26, max 2 page poster) https://s2022.siggraph.org/event/student-research-competition/
-- Others to be announced March/April
-
-DISS
-- Important dates https://www.cst.cam.ac.uk/teaching/part-ii/projects/dates
-- Dissertation structure explanation https://www.cst.cam.ac.uk/teaching/part-ii/projects/dissertation
-- Assessment criteria https://www.cst.cam.ac.uk/teaching/part-ii/projects/assessment
-- Projects from previous years https://www.cl.cam.ac.uk/teaching/projects/overseers/archive.html
-  - Mukul's: https://www.cl.cam.ac.uk/teaching/projects/archive/2020/msr45-dissertation.pdf
-  - Melissa's: https://www.cl.cam.ac.uk/teaching/projects/archive/2021/my364-dissertation.pdf
-  - Maximilian's: https://www.cl.cam.ac.uk/teaching/projects/archive/2021/mc2124-dissertation.pdf
-  - James's: https://jak76.user.srcf.net/Part_II_Project.pdf
-
-HPC
+CAMBRIDGE HPC
 - CSD3 application form 	https://www.hpc.cam.ac.uk/rcs-application
 - CSD3 tutorial site 		https://docs.hpc.cam.ac.uk/hpc/
 - HPC web portal 			https://login-web.hpc.cam.ac.uk/pun/sys/dashboard/
