@@ -1,6 +1,10 @@
 # Invertible Image Rescaling with FrEIA
 
 This is a reimplementation of [Invertible Image Rescaling](https://github.com/pkuxmq/Invertible-Image-Rescaling) using the [Freia](https://github.com/VLL-HD/FrEIA) framework.
+This repo also contains:
+- IRN research ideas in experiments.md
+- Tests of the framework on MNIST
+- Further experiments on IRN including compression
 
 ## Links
 CORE PAPER
