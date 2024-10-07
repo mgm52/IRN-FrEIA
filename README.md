@@ -1,12 +1,19 @@
 # Invertible Image Rescaling with FrEIA
 
-This is a reimplementation of [Invertible Image Rescaling](https://github.com/pkuxmq/Invertible-Image-Rescaling) using the [Freia](https://github.com/VLL-HD/FrEIA) framework.
-This repo also contains:
-- IRN research ideas in experiments.md
-- Tests of the framework on MNIST
-- Further experiments on IRN including compression
+This is a reimplementation of [Invertible Image Rescaling](https://github.com/pkuxmq/Invertible-Image-Rescaling) using the [Freia](https://github.com/VLL-HD/FrEIA) framework, which was my final project for Part II of the Cambridge CS Tripos.
 
-## Links
+You can [**read my full writeup here**](https://github.com/mgm52/IRN-FrEIA/blob/main/INN_Dissertation.pdf).
+
+### Repository overview
+The repository is divided into two projects: `mnist_generation` and `image_rescaling`.
+- The MNIST generation project being intended as a way of exploring _FrEIA_ in isolation, training experiments in minutes on a local CPU...
+- While `image_rescaling` models were trained on the Cambridge HPC GPU cluster, requiring integration with model-saving and progress-tracking callbacks.
+
+The structure within the two projects is a modification of the [_Cookiecutter Data Science_](https://cookiecutter-data-science.drivendata.org/) structure. [YAML config files](https://github.com/mgm52/IRN-FrEIA/tree/main/image_rescaling/configs) are used to set up experiments; Slurm to queue jobs on the HPC; wandb to track runs; and PyTorch for the underlying models.
+
+The repo also contains IRN research ideas in experiments.md.
+
+### Links
 CORE PAPER
 - Invertible image rescaling https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460120.pdf
 - Invertible image rescaling w/ appendix https://arxiv.org/pdf/2005.05650.pdf
